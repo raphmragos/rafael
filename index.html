@@ -330,9 +330,40 @@
         @keyframes pulse { 0%,100% {opacity:1;} 50% {opacity:0.5;} }
 
         .divider { border: none; border-top: 1px solid rgba(92, 18, 18, 0.8); margin: 16px 0; }
-        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: var(--font-size-sm); }
-        .info-label { color: var(--text-dim); }
-        .info-value { color: var(--accent); font-weight: 600; font-size: 15px; }
+        
+        /* ✅ INAYOS NA ISTILO - HINDI NA PUTOL ANG TEKSTO */
+        .info-row { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-start; 
+            padding: 10px 0; 
+            font-size: var(--font-size-sm); 
+            gap: 6px;
+            width: 100%;
+            border-bottom: 1px solid rgba(92, 18, 18, 0.6);
+        }
+        @media (min-width: 500px) {
+            .info-row {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+        .info-label { 
+            color: var(--text-dim); 
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        .info-value { 
+            color: var(--accent); 
+            font-weight: 600; 
+            font-size: 15px; 
+            font-family: var(--font-mono);
+            word-break: break-all;
+            line-height: 1.5;
+            width: 100%;
+            text-align: left;
+        }
 
         .dropdown-wrapper { position: relative; width: 100%; }
         .dropdown-content {

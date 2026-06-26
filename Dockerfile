@@ -3,8 +3,9 @@ FROM openresty/openresty:alpine
 # Mag-install ng mga kailangang gamit
 RUN apk add --no-cache ca-certificates wget unzip tini
 
-# I-download at i-install ang Xray kasama ang mga database
-RUN wget --timeout=30 -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+# ✅ GUMAMIT NG TIYAK NA BERSYON (HINDI LATEST)
+# v24.12.15 ang pinakamabisa at subok para sa XHTTP / HTTPUpgrade
+RUN wget --timeout=30 -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/download/v24.12.15/Xray-linux-64.zip && \
     unzip -q /tmp/xray.zip -d /tmp/xray/ && \
     mv /tmp/xray/xray /usr/local/bin/ && \
     mkdir -p /usr/local/share/xray/ && \
@@ -22,6 +23,8 @@ COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 COPY index.html /usr/local/openresty/nginx/html/index.html
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray/
+ENV TZ=Asia/Singapore  # ✅ Idinagdag para tama ang oras
+
 EXPOSE 8080
 
 # Gamitin ang tini para pamahalaan nang tama ang dalawang serbisyo

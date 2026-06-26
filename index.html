@@ -338,7 +338,7 @@
         .dropdown-wrapper { position: relative; width: 100%; }
         .dropdown-content {
             display: none;
-            position: fixed;
+            position: absolute;
             background: var(--surface-dark);
             border: 1.5px solid var(--border-bright);
             border-radius: 6px;
@@ -346,8 +346,7 @@
             z-index: 10000;
             max-height: 320px;
             overflow-y: auto;
-            width: calc(100% - 32px);
-            max-width: 688px;
+            width: 100%;
             box-shadow: 0 12px 30px rgba(0,0,0,0.6);
             backdrop-filter: blur(15px);
         }
@@ -390,7 +389,7 @@
 <div class="container" id="main-content" style="display:none;">
     <!-- HEADER INFO -->
     <div class="section fade-in">
-        <div class="section-title glow-text" style="font-size:var(--font-size-xl); letter-spacing:4px; color:var(--accent);">RAFAELTV PANEL</div>
+        <div class="section-title glow-text" style="font-size:var(--font-size-xl); letter-spacing:4px; color:var(--accent);">RAFAEL TV PANEL</div>
         <div class="section-subtitle">AKATSUKI EDITION • LIBRENG INTERNET</div>
         <hr class="divider">
         <div class="info-row"><span class="info-label">HOST:</span><span class="info-value" id="info-host">---</span></div>
@@ -399,7 +398,7 @@
         <div class="info-row"><span class="info-label">UPTIME:</span><span class="info-value" id="runtime-display">00:00:00</span></div>
     </div>
 
-    <!-- ✅ INILIPAT SA TAAS: ADDRESS AT SNI -->
+    <!-- ✅ ADDRESS AT SNI -->
     <div class="section fade-in">
         <div class="section-title">ADDRESS SELECTOR</div>
         <div class="dropdown-wrapper">
@@ -421,7 +420,7 @@
         </div>
     </div>
 
-    <!-- IBA PANG SECTION -->
+    <!-- MONITOR -->
     <div class="section fade-in">
         <div class="section-title">REAL-TIME MONITOR</div>
         <div class="speed-row">
@@ -676,11 +675,11 @@
 
         switch (selectedProtocol) {
             case 'vless':
-                return 'vless://' + PASS + '@' + addr + ':443?encryption=none&flow=none&' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1#VLESS-' + selectedTransport.toUpperCase() + '-' + host;
+                return 'vless://' + PASS + '@' + addr + ':443?encryption=none&flow=none&' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1&mode=stream-up#VLESS-' + selectedTransport.toUpperCase() + '-' + host;
             case 'trojan':
-                return 'trojan://' + PASS + '@' + addr + ':443?' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1#TROJAN-' + selectedTransport.toUpperCase() + '-' + host;
+                return 'trojan://' + PASS + '@' + addr + ':443?' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1&mode=stream-up#TROJAN-' + selectedTransport.toUpperCase() + '-' + host;
             case 'vmess':
-                return 'vmess://' + btoa(JSON.stringify({
+                return 'vmess://' + btoa(unescape(encodeURIComponent(JSON.stringify({
                     v: '2',
                     ps: 'VMESS-' + selectedTransport.toUpperCase() + '-' + host,
                     add: addr,
@@ -696,7 +695,7 @@
                     sni: sni,
                     fp: 'chrome',
                     alpn: 'http/1.1'
-                }));
+                }))));
             case 'shadowsocks':
                 return 'ss://' + btoa('aes-256-gcm:' + PASS) + '@' + addr + ':443#' + 'SS-' + selectedTransport.toUpperCase() + '-' + host;
         }
@@ -734,19 +733,35 @@
     });
 
     copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(configDisplay.textContent).then(() => {
-            copyBtn.textContent = 'COPIED ✓';
-            setTimeout(() => copyBtn.textContent = 'COPY', 2000);
-            addLog('Link copied to clipboard.');
-        }).catch(() => {
-            copyBtn.textContent = 'FAILED!';
-            setTimeout(() => copyBtn.textContent = 'COPY', 2000);
-        });
+        const text = configDisplay.textContent;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => {
+                copyBtn.textContent = 'COPIED ✓';
+                setTimeout(() => copyBtn.textContent = 'COPY', 2000);
+                addLog('Link copied to clipboard.');
+            }).catch(() => fallbackCopy(text));
+        } else {
+            fallbackCopy(text);
+        }
     });
+
+    function fallbackCopy(text) {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        copyBtn.textContent = 'COPIED ✓';
+        setTimeout(() => copyBtn.textContent = 'COPY', 2000);
+        addLog('Link copied to clipboard.');
+    }
 
     window.addEventListener('load', initPortal);
 })();
 </script>
 
 </body>
-  </html>
+</html>

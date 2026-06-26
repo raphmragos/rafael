@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RAFAEL TV PANEL - Akatsuki Clan</title>
+    <title> RAFAEL TV PANEL - Akatsuki Clan</title>
     <style>
         :root {
             --bg-main: #0b0404;
@@ -134,6 +134,7 @@
             animation: fadeInUp 0.8s ease 0.5s forwards;
         }
 
+        /* --- BOX STYLING --- */
         .section {
             background: linear-gradient(160deg, #140404, #1a0606);
             border: 2px solid var(--border);
@@ -330,45 +331,14 @@
         @keyframes pulse { 0%,100% {opacity:1;} 50% {opacity:0.5;} }
 
         .divider { border: none; border-top: 1px solid rgba(92, 18, 18, 0.8); margin: 16px 0; }
-        
-        /* ✅ INAYOS NA ISTILO - HINDI NA PUTOL ANG TEKSTO */
-        .info-row { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: flex-start; 
-            padding: 10px 0; 
-            font-size: var(--font-size-sm); 
-            gap: 6px;
-            width: 100%;
-            border-bottom: 1px solid rgba(92, 18, 18, 0.6);
-        }
-        @media (min-width: 500px) {
-            .info-row {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-            }
-        }
-        .info-label { 
-            color: var(--text-dim); 
-            font-weight: 500;
-            flex-shrink: 0;
-        }
-        .info-value { 
-            color: var(--accent); 
-            font-weight: 600; 
-            font-size: 15px; 
-            font-family: var(--font-mono);
-            word-break: break-all;
-            line-height: 1.5;
-            width: 100%;
-            text-align: left;
-        }
+        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; font-size: var(--font-size-sm); }
+        .info-label { color: var(--text-dim); }
+        .info-value { color: var(--accent); font-weight: 600; font-size: 15px; }
 
         .dropdown-wrapper { position: relative; width: 100%; }
         .dropdown-content {
             display: none;
-            position: absolute;
+            position: fixed;
             background: var(--surface-dark);
             border: 1.5px solid var(--border-bright);
             border-radius: 6px;
@@ -376,7 +346,8 @@
             z-index: 10000;
             max-height: 320px;
             overflow-y: auto;
-            width: 100%;
+            width: calc(100% - 32px);
+            max-width: 688px;
             box-shadow: 0 12px 30px rgba(0,0,0,0.6);
             backdrop-filter: blur(15px);
         }
@@ -417,17 +388,18 @@
 </div>
 
 <div class="container" id="main-content" style="display:none;">
+    <!-- HEADER INFO -->
     <div class="section fade-in">
         <div class="section-title glow-text" style="font-size:var(--font-size-xl); letter-spacing:4px; color:var(--accent);">RAFAEL TV PANEL</div>
         <div class="section-subtitle">AKATSUKI EDITION • LIBRENG INTERNET</div>
         <hr class="divider">
         <div class="info-row"><span class="info-label">HOST:</span><span class="info-value" id="info-host">---</span></div>
-        <div class="info-row"><span class="info-label">PORT:</span><span class="info-value">443</span></div>
         <div class="info-row"><span class="info-label">VMess UUID:</span><span class="info-value">b831381d-6324-4d53-ad4f-8cda48b30811</span></div>
         <div class="info-row"><span class="info-label">VLESS/Trojan/SS Pass:</span><span class="info-value">rafaeltv</span></div>
         <div class="info-row"><span class="info-label">UPTIME:</span><span class="info-value" id="runtime-display">00:00:00</span></div>
     </div>
 
+    <!-- ✅ INILIPAT SA TAAS: ADDRESS AT SNI -->
     <div class="section fade-in">
         <div class="section-title">ADDRESS SELECTOR</div>
         <div class="dropdown-wrapper">
@@ -449,6 +421,7 @@
         </div>
     </div>
 
+    <!-- IBA PANG SECTION -->
     <div class="section fade-in">
         <div class="section-title">REAL-TIME MONITOR</div>
         <div class="speed-row">
@@ -494,10 +467,7 @@
 (function() {
     const VMESS_UUID = 'b831381d-6324-4d53-ad4f-8cda48b30811';
     const PASS = 'rafaeltv';
-    // ✅ Inayos para gumana sa *.run.app
-    let currentHost = window.location.hostname || 'rafaeltv-panel-253044518852.us-central1.run.app';
-    const currentPort = window.location.port || '443';
-    const isSecure = window.location.protocol === 'https:';
+    let currentHost = window.location.hostname || '127.0.0.1';
     
     const PROTOCOLS = ['vless', 'trojan', 'vmess', 'shadowsocks'];
     const PROTOCOL_LABELS = { 
@@ -696,7 +666,6 @@
         const addr = selectedAddress;
         const sni = selectedSNI;
         const host = currentHost;
-        const port = '443';
         const path = getPath();
         const netType = selectedTransport === 'ws' ? 'ws' : selectedTransport === 'hu' ? 'httpupgrade' : 'xhttp';
         
@@ -707,15 +676,15 @@
 
         switch (selectedProtocol) {
             case 'vless':
-                return 'vless://' + PASS + '@' + addr + ':' + port + '?encryption=none&flow=none&' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1&mode=stream-up#VLESS-' + selectedTransport.toUpperCase() + '-' + host;
+                return 'vless://' + PASS + '@' + addr + ':443?encryption=none&flow=none&' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1#VLESS-' + selectedTransport.toUpperCase() + '-' + host;
             case 'trojan':
-                return 'trojan://' + PASS + '@' + addr + ':' + port + '?' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1&mode=stream-up#TROJAN-' + selectedTransport.toUpperCase() + '-' + host;
+                return 'trojan://' + PASS + '@' + addr + ':443?' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1#TROJAN-' + selectedTransport.toUpperCase() + '-' + host;
             case 'vmess':
-                return 'vmess://' + btoa(unescape(encodeURIComponent(JSON.stringify({
+                return 'vmess://' + btoa(JSON.stringify({
                     v: '2',
                     ps: 'VMESS-' + selectedTransport.toUpperCase() + '-' + host,
                     add: addr,
-                    port: port,
+                    port: '443',
                     id: VMESS_UUID,
                     aid: '0',
                     scy: 'auto',
@@ -727,9 +696,9 @@
                     sni: sni,
                     fp: 'chrome',
                     alpn: 'http/1.1'
-                }))));
+                }));
             case 'shadowsocks':
-                return 'ss://' + btoa('aes-256-gcm:' + PASS) + '@' + addr + ':' + port + '#' + 'SS-' + selectedTransport.toUpperCase() + '-' + host;
+                return 'ss://' + btoa('aes-256-gcm:' + PASS) + '@' + addr + ':443#' + 'SS-' + selectedTransport.toUpperCase() + '-' + host;
         }
     }
 
@@ -765,31 +734,15 @@
     });
 
     copyBtn.addEventListener('click', () => {
-        const text = configDisplay.textContent;
-        if (navigator.clipboard && window.isSecureContext) {
-            navigator.clipboard.writeText(text).then(() => {
-                copyBtn.textContent = 'COPIED ✓';
-                setTimeout(() => copyBtn.textContent = 'COPY', 2000);
-                addLog('Link copied to clipboard.');
-            }).catch(() => fallbackCopy(text));
-        } else {
-            fallbackCopy(text);
-        }
+        navigator.clipboard.writeText(configDisplay.textContent).then(() => {
+            copyBtn.textContent = 'COPIED ✓';
+            setTimeout(() => copyBtn.textContent = 'COPY', 2000);
+            addLog('Link copied to clipboard.');
+        }).catch(() => {
+            copyBtn.textContent = 'FAILED!';
+            setTimeout(() => copyBtn.textContent = 'COPY', 2000);
+        });
     });
-
-    function fallbackCopy(text) {
-        const textArea = document.createElement("textarea");
-        textArea.value = text;
-        textArea.style.position = "fixed";
-        textArea.style.opacity = "0";
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        copyBtn.textContent = 'COPIED ✓';
-        setTimeout(() => copyBtn.textContent = 'COPY', 2000);
-        addLog('Link copied to clipboard.');
-    }
 
     window.addEventListener('load', initPortal);
 })();

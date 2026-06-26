@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title> RAFAEL TV PANEL - Akatsuki Clan</title>
+    <title>RAFAEL TV PANEL - Akatsuki Clan</title>
     <style>
         :root {
             --bg-main: #0b0404;
@@ -134,7 +134,6 @@
             animation: fadeInUp 0.8s ease 0.5s forwards;
         }
 
-        /* --- BOX STYLING --- */
         .section {
             background: linear-gradient(160deg, #140404, #1a0606);
             border: 2px solid var(--border);
@@ -387,18 +386,17 @@
 </div>
 
 <div class="container" id="main-content" style="display:none;">
-    <!-- HEADER INFO -->
     <div class="section fade-in">
         <div class="section-title glow-text" style="font-size:var(--font-size-xl); letter-spacing:4px; color:var(--accent);">RAFAEL TV PANEL</div>
         <div class="section-subtitle">AKATSUKI EDITION • LIBRENG INTERNET</div>
         <hr class="divider">
         <div class="info-row"><span class="info-label">HOST:</span><span class="info-value" id="info-host">---</span></div>
+        <div class="info-row"><span class="info-label">PORT:</span><span class="info-value">443</span></div>
         <div class="info-row"><span class="info-label">VMess UUID:</span><span class="info-value">b831381d-6324-4d53-ad4f-8cda48b30811</span></div>
         <div class="info-row"><span class="info-label">VLESS/Trojan/SS Pass:</span><span class="info-value">rafaeltv</span></div>
         <div class="info-row"><span class="info-label">UPTIME:</span><span class="info-value" id="runtime-display">00:00:00</span></div>
     </div>
 
-    <!-- ✅ ADDRESS AT SNI -->
     <div class="section fade-in">
         <div class="section-title">ADDRESS SELECTOR</div>
         <div class="dropdown-wrapper">
@@ -420,7 +418,6 @@
         </div>
     </div>
 
-    <!-- MONITOR -->
     <div class="section fade-in">
         <div class="section-title">REAL-TIME MONITOR</div>
         <div class="speed-row">
@@ -466,7 +463,10 @@
 (function() {
     const VMESS_UUID = 'b831381d-6324-4d53-ad4f-8cda48b30811';
     const PASS = 'rafaeltv';
-    let currentHost = window.location.hostname || '127.0.0.1';
+    // ✅ Inayos para gumana sa *.run.app
+    let currentHost = window.location.hostname || 'rafaeltv-panel-253044518852.us-central1.run.app';
+    const currentPort = window.location.port || '443';
+    const isSecure = window.location.protocol === 'https:';
     
     const PROTOCOLS = ['vless', 'trojan', 'vmess', 'shadowsocks'];
     const PROTOCOL_LABELS = { 
@@ -665,6 +665,7 @@
         const addr = selectedAddress;
         const sni = selectedSNI;
         const host = currentHost;
+        const port = '443';
         const path = getPath();
         const netType = selectedTransport === 'ws' ? 'ws' : selectedTransport === 'hu' ? 'httpupgrade' : 'xhttp';
         
@@ -675,15 +676,15 @@
 
         switch (selectedProtocol) {
             case 'vless':
-                return 'vless://' + PASS + '@' + addr + ':443?encryption=none&flow=none&' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1&mode=stream-up#VLESS-' + selectedTransport.toUpperCase() + '-' + host;
+                return 'vless://' + PASS + '@' + addr + ':' + port + '?encryption=none&flow=none&' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1&mode=stream-up#VLESS-' + selectedTransport.toUpperCase() + '-' + host;
             case 'trojan':
-                return 'trojan://' + PASS + '@' + addr + ':443?' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1&mode=stream-up#TROJAN-' + selectedTransport.toUpperCase() + '-' + host;
+                return 'trojan://' + PASS + '@' + addr + ':' + port + '?' + transportParam + encodeURIComponent(path) + '&host=' + host + '&security=tls&fp=chrome&sni=' + sni + '&alpn=http%2F1.1&mode=stream-up#TROJAN-' + selectedTransport.toUpperCase() + '-' + host;
             case 'vmess':
                 return 'vmess://' + btoa(unescape(encodeURIComponent(JSON.stringify({
                     v: '2',
                     ps: 'VMESS-' + selectedTransport.toUpperCase() + '-' + host,
                     add: addr,
-                    port: '443',
+                    port: port,
                     id: VMESS_UUID,
                     aid: '0',
                     scy: 'auto',
@@ -697,7 +698,7 @@
                     alpn: 'http/1.1'
                 }))));
             case 'shadowsocks':
-                return 'ss://' + btoa('aes-256-gcm:' + PASS) + '@' + addr + ':443#' + 'SS-' + selectedTransport.toUpperCase() + '-' + host;
+                return 'ss://' + btoa('aes-256-gcm:' + PASS) + '@' + addr + ':' + port + '#' + 'SS-' + selectedTransport.toUpperCase() + '-' + host;
         }
     }
 

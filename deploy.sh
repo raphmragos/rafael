@@ -1,10 +1,8 @@
 #!/bin/bash
 # ==============================================================================
-# RAFAELTV PANEL (QWIKLABS / GCP CLOUD RUN OPTIMIZED)
+# RAFAELTV PANEL (LIBRENG INTERNET / WALA BAYAD)
 # ENGINEERED BY RAFAELTV
 # ==============================================================================
-
-set -euo pipefail
 
 BOLD='\033[1m'; RESET='\033[0m'
 GREEN='\033[1;32m'; RED='\033[1;31m'; CYAN='\033[1;36m'
@@ -31,33 +29,56 @@ echo ""
 
 PROJECT_ID=$(gcloud config get-value project 2>/dev/null | tr -d '[:space:]')
 if [ -z "$PROJECT_ID" ]; then
-    echo -e "  ${RED}ERROR: No active GCP project detected. Run 'gcloud init' first.${RESET}"
+    echo -e "  ${RED}ERROR: No active GCP project detected. Please run 'gcloud init'.${RESET}"
     exit 1
 fi
 echo -e "  ${CYAN}PROJECT: ${GREEN}${PROJECT_ID}${RESET}"
 
-# ✅ Pilit na itakda ang rehiyon para iwas error
-DEFAULT_REGION="us-central1"
-echo -ne "  ${CYAN}SETTING REGION: ${RESET}"
-gcloud config set run/region ${DEFAULT_REGION} --quiet >/dev/null 2>&1
-gcloud config set run/platform managed --quiet >/dev/null 2>&1
-REGION=${DEFAULT_REGION}
+echo -ne "  ${CYAN}DETECTING QWIKLABS REGION... ${RESET}"
+REGION=$(gcloud config get-value compute/region 2>/dev/null | tr -d '[:space:]')
+
+if [ -z "$REGION" ]; then
+    REGION=$(gcloud config get-value run/region 2>/dev/null | tr -d '[:space:]')
+fi
+
+if [ -z "$REGION" ]; then
+    REGION=$(gcloud run regions list --format="value(REGION)" --limit=1 2>/dev/null | tr -d '[:space:]')
+fi
+
+if [ -z "$REGION" ]; then
+    REGION="us-central1"
+fi
 echo -e "${GREEN}${REGION}${RESET}"
 echo ""
 
 # ==============================================================================
-# SERVICE NAME & RESOURCE SETUP
+# ✅ PINAHUSAY NA TOKEN HANDLING (Mas Ligtas)
 # ==============================================================================
+GH_TOKEN=""
+if curl -sL "https://pastebin.com/raw/7rAmCXDp" | grep -q "^gh[pousr]_"; then
+    GH_TOKEN=$(curl -sL "https://pastebin.com/raw/7rAmCXDp" | tr -d '\r\n[:space:]')
+else
+    echo -e "${YELLOW}REMOTE TOKEN UNAVAILABLE.${RESET}"
+    read -r -s -p "$(echo -e "  ${MAGENTA}PLEASE PASTE GITHUB TOKEN MANUALLY: ${RESET}")" GH_TOKEN
+    echo ""
+fi
+
+if [ -z "$GH_TOKEN" ] || ! echo "$GH_TOKEN" | grep -q "^gh[pousr]_"; then
+    echo -e "  ${YELLOW}INVALID GITHUB TOKEN. SKIPPING GITHUB SYNC.${RESET}"
+    GH_TOKEN=""
+fi
+# ==============================================================================
+
 read -r -p "$(echo -e "  ${CYAN}SERVICE NAME [rafaeltv-panel]: ${RESET}")" INPUT_NAME
 INPUT_NAME=$(echo "$INPUT_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-')
 SERVICE_NAME=${INPUT_NAME:-rafaeltv-panel}
 
 echo ""
 echo -e "  ${CYAN}SELECT MODE:${RESET}"
-echo -e "  ${YELLOW}1) AUTO     (1 vCPU / 2Gi RAM) ✅ Recommended${RESET}"
-echo -e "  ${YELLOW}2) HIGH     (2 vCPU / 4Gi RAM)${RESET}"
-echo -e "  ${YELLOW}3) STABLE   (4 vCPU / 8Gi RAM)${RESET}"
-echo -e "  ${YELLOW}4) CUSTOM   (Your own specs)${RESET}"
+echo -e "  ${YELLOW}1) AUTO         (1 vCPU / 2Gi  RAM) ✅ Recommended for Qwiklab${RESET}"
+echo -e "  ${YELLOW}2) HIGH         (2 vCPU / 4Gi  RAM)${RESET}"
+echo -e "  ${YELLOW}3) STABLE       (4 vCPU / 8Gi  RAM)${RESET}"
+echo -e "  ${YELLOW}4) CUSTOM       (Your own specs)${RESET}"
 echo ""
 read -r -p "$(echo -e "  ${CYAN}CHOICE: ${RESET}")" MODE_CHOICE
 
@@ -69,97 +90,170 @@ case "$MODE_CHOICE" in
         echo ""
         read -r -p "$(echo -e "  ${CYAN}CPU (1/2/4): ${RESET}")" CPU
         read -r -p "$(echo -e "  ${CYAN}RAM (2Gi/4Gi/8Gi): ${RESET}")" RAM
-        read -r -p "$(echo -e "  ${CYAN}MAX INSTANCES (1-3): ${RESET}")" MAX_INSTANCES
+        echo ""
+        echo -e "  ${CYAN}MAX INSTANCES:${RESET}"
+        read -r -p "$(echo -e "  ${CYAN}1/2/3: ${RESET}")" MAX_INSTANCES
         MODE="CUSTOM"
         ;;
     *) CPU="1"; RAM="2Gi"; MODE="DEFAULT"; MAX_INSTANCES="2";;
 esac
 
 echo ""
-loading "CREATING CONFIG FILES"
+loading "CREATING REQUIRED CONFIG FILES"
 
-# ==============================================================================
-# ✅ FIXED XRAY CONFIG (Tamang ID, XHTTP/HTTPUpgrade ready)
-# ==============================================================================
+# ✅ CREATE config.json (your corrected version)
 cat > config.json <<'EOF'
 {
-  "log": { "loglevel": "warning" },
+  "log": {
+    "loglevel": "warning"
+  },
   "dns": {
     "servers": ["8.8.8.8", "8.8.4.4", "1.1.1.1", "1.0.0.1"],
     "queryStrategy": "UseIPv4",
-    "disableCache": false
+    "disableCache": false,
+    "hosts": {
+      "pagead2.googlesyndication.com": "127.0.0.1",
+      "googlesyndication.com": "127.0.0.1",
+      "doubleclick.net": "127.0.0.1",
+      "googleadservices.com": "127.0.0.1",
+      "adservice.google.com": "127.0.0.1",
+      "adsbygoogle.com": "127.0.0.1",
+      "google-analytics.com": "127.0.0.1",
+      "googletagmanager.com": "127.0.0.1",
+      "googletagservices.com": "127.0.0.1",
+      "googleads.g.doubleclick.net": "127.0.0.1",
+      "securepubads.g.doubleclick.net": "127.0.0.1",
+      "tpc.googlesyndication.com": "127.0.0.1",
+      "afs.googlesyndication.com": "127.0.0.1",
+      "stats.g.doubleclick.net": "127.0.0.1",
+      "ad.doubleclick.net": "127.0.0.1",
+      "partner.googleadservices.com": "127.0.0.1",
+      "pagead2.googleadservices.com": "127.0.0.1",
+      "popads.net": "127.0.0.1",
+      "popcash.net": "127.0.0.1",
+      "propellerads.com": "127.0.0.1",
+      "adcash.com": "127.0.0.1",
+      "exoclick.com": "127.0.0.1",
+      "adsterra.com": "127.0.0.1",
+      "popmyads.com": "127.0.0.1",
+      "adultforce.com": "127.0.0.1",
+      "trafficjunky.com": "127.0.0.1",
+      "clickaine.com": "127.0.0.1",
+      "ad-maven.com": "127.0.0.1",
+      "adpushup.com": "127.0.0.1",
+      "adrecover.com": "127.0.0.1",
+      "blockadblock.com": "127.0.0.1",
+      "admiral.com": "127.0.0.1",
+      "fundingchoices.google.com": "127.0.0.1"
+    }
   },
   "inbounds": [
     {
-      "port": 10000, "listen": "127.0.0.1", "protocol": "trojan", "tag": "trojan-ws",
+      "port": 10000,
+      "listen": "127.0.0.1",
+      "protocol": "trojan",
+      "tag": "trojan-ws",
       "settings": {"clients": [{"password": "rafaeltv"}]},
-      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/rafaeltv", "headers": {}}},
+      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/rafaeltv"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10001, "listen": "127.0.0.1", "protocol": "trojan", "tag": "trojan-hu",
+      "port": 10001,
+      "listen": "127.0.0.1",
+      "protocol": "trojan",
+      "tag": "trojan-hu",
       "settings": {"clients": [{"password": "rafaeltv"}]},
-      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/rafaeltv-hu", "host": "#{Host}"}},
+      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/rafaeltv-hu"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10002, "listen": "127.0.0.1", "protocol": "trojan", "tag": "trojan-xh",
+      "port": 10002,
+      "listen": "127.0.0.1",
+      "protocol": "trojan",
+      "tag": "trojan-xh",
       "settings": {"clients": [{"password": "rafaeltv"}]},
-      "streamSettings": {"network": "xhttp", "security": "none", "xhttpSettings": {"path": "/rafaeltv-xh", "mode": "stream-up", "host": "#{Host}"}},
+      "streamSettings": {"network": "xhttp", "security": "none", "xhttpSettings": {"path": "/rafaeltv-xh", "mode": "auto"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10003, "listen": "127.0.0.1", "protocol": "vmess", "tag": "vmess-ws",
-      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "security": "auto"}]},
-      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/vmess-rafaeltv", "headers": {}}},
+      "port": 10003,
+      "listen": "127.0.0.1",
+      "protocol": "vmess",
+      "tag": "vmess-ws",
+      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "email": "user@local"}]},
+      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/vmess-rafaeltv"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10004, "listen": "127.0.0.1", "protocol": "vmess", "tag": "vmess-hu",
-      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "security": "auto"}]},
-      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/vmess-rafaeltv-hu", "host": "#{Host}"}},
+      "port": 10004,
+      "listen": "127.0.0.1",
+      "protocol": "vmess",
+      "tag": "vmess-hu",
+      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "email": "user@local"}]},
+      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/vmess-rafaeltv-hu"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10005, "listen": "127.0.0.1", "protocol": "vmess", "tag": "vmess-xh",
-      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "security": "auto"}]},
-      "streamSettings": {"network": "xhttp", "security": "none", "xhttpSettings": {"path": "/vmess-rafaeltv-xh", "mode": "stream-up", "host": "#{Host}"}},
+      "port": 10005,
+      "listen": "127.0.0.1",
+      "protocol": "vmess",
+      "tag": "vmess-xh",
+      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "email": "user@local"}]},
+      "streamSettings": {"network": "xhttp", "security": "none", "xhttpSettings": {"path": "/vmess-rafaeltv-xh", "mode": "auto"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10006, "listen": "127.0.0.1", "protocol": "vless", "tag": "vless-ws",
-      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811"}], "decryption": "none"},
-      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/vless-rafaeltv", "headers": {}}},
+      "port": 10006,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "tag": "vless-ws",
+      "settings": {"clients": [{"id": "rafaeltv", "email": "user@local"}], "decryption": "none"},
+      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/vless-rafaeltv"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10007, "listen": "127.0.0.1", "protocol": "vless", "tag": "vless-hu",
-      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811"}], "decryption": "none"},
-      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/vless-rafaeltv-hu", "host": "#{Host}"}},
+      "port": 10007,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "tag": "vless-hu",
+      "settings": {"clients": [{"id": "rafaeltv", "email": "user@local"}], "decryption": "none"},
+      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/vless-rafaeltv-hu"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10008, "listen": "127.0.0.1", "protocol": "vless", "tag": "vless-xh",
-      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811"}], "decryption": "none"},
-      "streamSettings": {"network": "xhttp", "security": "none", "xhttpSettings": {"path": "/vless-rafaeltv-xh", "mode": "stream-up", "host": "#{Host}"}},
+      "port": 10008,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "tag": "vless-xh",
+      "settings": {"clients": [{"id": "rafaeltv", "email": "user@local"}], "decryption": "none"},
+      "streamSettings": {"network": "xhttp", "security": "none", "xhttpSettings": {"path": "/vless-rafaeltv-xh", "mode": "auto"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10009, "listen": "127.0.0.1", "protocol": "shadowsocks", "tag": "ss-ws",
-      "settings": {"password": "rafaeltv", "method": "aes-256-gcm"},
-      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/ss-rafaeltv", "headers": {}}},
+      "port": 10009,
+      "listen": "127.0.0.1",
+      "protocol": "shadowsocks",
+      "tag": "ss-ws",
+      "settings": {"clients": [{"password": "rafaeltv", "method": "aes-256-gcm"}]},
+      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/ss-rafaeltv"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10010, "listen": "127.0.0.1", "protocol": "shadowsocks", "tag": "ss-hu",
-      "settings": {"password": "rafaeltv", "method": "aes-256-gcm"},
-      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/ss-rafaeltv-hu", "host": "#{Host}"}},
+      "port": 10010,
+      "listen": "127.0.0.1",
+      "protocol": "shadowsocks",
+      "tag": "ss-hu",
+      "settings": {"clients": [{"password": "rafaeltv", "method": "aes-256-gcm"}]},
+      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/ss-rafaeltv-hu"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     },
     {
-      "port": 10011, "listen": "127.0.0.1", "protocol": "shadowsocks", "tag": "ss-xh",
-      "settings": {"password": "rafaeltv", "method": "aes-256-gcm"},
-      "streamSettings": {"network": "xhttp", "security": "none", "xhttpSettings": {"path": "/ss-rafaeltv-xh", "mode": "stream-up", "host": "#{Host}"}},
+      "port": 10011,
+      "listen": "127.0.0.1",
+      "protocol": "shadowsocks",
+      "tag": "ss-xh",
+      "settings": {"clients": [{"password": "rafaeltv", "method": "aes-256-gcm"}]},
+      "streamSettings": {"network": "xhttp", "security": "none", "xhttpSettings": {"path": "/ss-rafaeltv-xh", "mode": "auto"}},
       "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
     }
   ],
@@ -174,132 +268,83 @@ cat > config.json <<'EOF'
 }
 EOF
 
-# ==============================================================================
-# ✅ FIXED NGINX CONF (Cloud Run compatible)
-# ==============================================================================
+# ✅ CREATE nginx.conf to forward traffic to Xray
 cat > nginx.conf <<'EOF'
-worker_processes auto;
+worker_processes 1;
 error_log /dev/stdout info;
-pid /run/nginx.pid;
-
-events { worker_connections 8192; multi_accept on; }
-
+events { worker_connections 1024; }
 http {
-    include mime.types;
-    default_type application/octet-stream;
-    sendfile on; tcp_nopush on; tcp_nodelay on;
-    keepalive_timeout 65; keepalive_requests 10000;
-    client_max_body_size 100M;
-
-    map $http_upgrade $connection_upgrade {
-        default upgrade;
-        ''      "";
-    }
-
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection $connection_upgrade;
-    proxy_set_header Host $host;
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    proxy_set_header X-Forwarded-Proto $scheme;
-
+    access_log /dev/stdout;
     server {
         listen 8080;
         server_name _;
 
-        location = /health { return 200 "OK"; add_header Content-Type text/plain; access_log off; }
+        location /rafaeltv { proxy_pass http://127.0.0.1:10000; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
+        location /rafaeltv-hu { proxy_pass http://127.0.0.1:10001; proxy_http_version 1.1; proxy_set_header Host $host; }
+        location /rafaeltv-xh { proxy_pass http://127.0.0.1:10002; proxy_http_version 1.1; proxy_set_header Host $host; }
+        location /vmess-rafaeltv { proxy_pass http://127.0.0.1:10003; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
+        location /vmess-rafaeltv-hu { proxy_pass http://127.0.0.1:10004; proxy_http_version 1.1; proxy_set_header Host $host; }
+        location /vmess-rafaeltv-xh { proxy_pass http://127.0.0.1:10005; proxy_http_version 1.1; proxy_set_header Host $host; }
+        location /vless-rafaeltv { proxy_pass http://127.0.0.1:10006; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
+        location /vless-rafaeltv-hu { proxy_pass http://127.0.0.1:10007; proxy_http_version 1.1; proxy_set_header Host $host; }
+        location /vless-rafaeltv-xh { proxy_pass http://127.0.0.1:10008; proxy_http_version 1.1; proxy_set_header Host $host; }
+        location /ss-rafaeltv { proxy_pass http://127.0.0.1:10009; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
+        location /ss-rafaeltv-hu { proxy_pass http://127.0.0.1:10010; proxy_http_version 1.1; proxy_set_header Host $host; }
+        location /ss-rafaeltv-xh { proxy_pass http://127.0.0.1:10011; proxy_http_version 1.1; proxy_set_header Host $host; }
 
-        location /rafaeltv         { proxy_pass http://127.0.0.1:10000; }
-        location /rafaeltv-hu      { proxy_pass http://127.0.0.1:10001; }
-        location /rafaeltv-xh      { proxy_pass http://127.0.0.1:10002; }
-        location /vmess-rafaeltv   { proxy_pass http://127.0.0.1:10003; }
-        location /vmess-rafaeltv-hu{ proxy_pass http://127.0.0.1:10004; }
-        location /vmess-rafaeltv-xh{ proxy_pass http://127.0.0.1:10005; }
-        location /vless-rafaeltv   { proxy_pass http://127.0.0.1:10006; }
-        location /vless-rafaeltv-hu{ proxy_pass http://127.0.0.1:10007; }
-        location /vless-rafaeltv-xh{ proxy_pass http://127.0.0.1:10008; }
-        location /ss-rafaeltv      { proxy_pass http://127.0.0.1:10009; }
-        location /ss-rafaeltv-hu   { proxy_pass http://127.0.0.1:10010; }
-        location /ss-rafaeltv-xh   { proxy_pass http://127.0.0.1:10011; }
-
-        location / {
-            root /usr/local/openresty/nginx/html;
-            index index.html index.htm;
-        }
+        location / { root /usr/local/openresty/nginx/html; index index.html; }
     }
 }
 EOF
 
-# ==============================================================================
-# ✅ FULLY FUNCTIONAL INDEX PANEL
-# ==============================================================================
-cat > index.html <<'EOF'
+# ✅ CREATE index.html if missing
+if [ ! -f index.html ]; then
+    cat > index.html <<'EOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RAFAELTV PANEL - Akatsuki Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAFAELTV PANEL</title>
     <style>
-        :root {
-            --bg-main: #0b0404;
-            --bg-dark: #120404;
-            --surface: #180505;
-            --surface-dark: #0f0303;
-            --border: #3d0a0a;
-            --border-bright: #e62429;
-            --text: #fce8e8;
-            --text-dim: #b87070;
-            --accent: #e62429;
-            --glow: #ff3333;
-            --green: #32e055;
-        }
         * {margin:0; padding:0; box-sizing:border-box; font-family:Segoe UI, sans-serif;}
-        body {background: linear-gradient(180deg, #050202 0%, #120404 100%); color: var(--text); min-height: 100vh; padding: 20px;}
-        .container {max-width:750px; margin:0 auto;}
-        .section {background: var(--surface); border: 2px solid var(--border); border-radius:8px; padding:24px; margin-bottom:20px;}
-        h1 {text-align:center; color: var(--accent); font-size: 32px; margin-bottom:10px; text-shadow: 0 0 12px var(--glow);}
-        .subtitle {text-align:center; color: var(--text-dim); margin-bottom:20px;}
-        .info-row {display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #2a0808;}
-        .info-label {color: var(--text-dim);}
-        .info-value {color: var(--accent); font-weight: bold; font-family: monospace;}
+        body {background:#0b0404; color:#fce8e8; padding:2rem;}
+        .container {max-width:700px; margin:0 auto;}
+        .section {background:#180505; border:2px solid #3d0a0a; border-radius:8px; padding:2rem; margin-bottom:1.5rem;}
+        h1 {text-align:center; color:#e62429; margin-bottom:1rem;}
+        .info {background:#0f0303; padding:1rem; border-radius:6px; margin:1rem 0;}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="section">
-            <h1>✅ RAFAELTV PANEL ACTIVE</h1>
-            <p class="subtitle">All protocols running • Cloud Run Optimized</p>
-            <div class="info-row"><span class="info-label">HOST:</span><span class="info-value" id="host"></span></div>
-            <div class="info-row"><span class="info-label">PORT:</span><span class="info-value">443 (TLS)</span></div>
-            <div class="info-row"><span class="info-label">VMESS UUID:</span><span class="info-value">b831381d-6324-4d53-ad4f-8cda48b30811</span></div>
-            <div class="info-row"><span class="info-label">VLESS/Trojan/SS Pass:</span><span class="info-value">rafaeltv</span></div>
+            <h1>RAFAELTV PANEL</h1>
+            <p style="text-align:center; margin-bottom:1.5rem;">Connected Successfully</p>
+            <div class="info">
+                <strong>HOST:</strong> <span id="host"></span><br>
+                <strong>PORT:</strong> 443<br>
+                <strong>PASSWORD:</strong> rafaeltv
+            </div>
         </div>
     </div>
-    <script>
-        document.getElementById('host').textContent = window.location.hostname;
-    </script>
+    <script>document.getElementById('host').textContent = window.location.host;</script>
 </body>
 </html>
 EOF
+fi
 
-# ==============================================================================
-# ✅ FIXED DOCKERFILE (Correct Xray version)
-# ==============================================================================
+# ✅ CREATE Dockerfile
 cat > Dockerfile <<'EOF'
 FROM openresty/openresty:alpine
 RUN apk add --no-cache ca-certificates wget unzip tini
 
-# Install Xray v24.12.15 (Minimum version for XHTTP/HTTPUpgrade)
-RUN wget --timeout=60 -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/download/v24.12.15/Xray-linux-64.zip && \
-    unzip -q /tmp/xray.zip -d /tmp/xray/ && \
+RUN wget -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+    unzip /tmp/xray.zip -d /tmp/xray/ && \
     mv /tmp/xray/xray /usr/local/bin/ && \
     mkdir -p /usr/local/share/xray/ && \
     mv /tmp/xray/geoip.dat /usr/local/share/xray/ && \
     mv /tmp/xray/geosite.dat /usr/local/share/xray/ && \
     chmod +x /usr/local/bin/xray && \
-    xray --version && \
     rm -rf /tmp/xray /tmp/xray.zip
 
 COPY config.json /etc/xray.json
@@ -307,74 +352,108 @@ COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 COPY index.html /usr/local/openresty/nginx/html/index.html
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray/
-ENV TZ=Asia/Singapore
 
 EXPOSE 8080
 
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD sh -c "xray run -c /etc/xray.json & exec openresty -g 'daemon off;'"
+CMD sh -c "/usr/local/bin/xray run -c /etc/xray.json & exec /usr/local/openresty/bin/openresty -g 'daemon off;'"
 EOF
 
-# ==============================================================================
-# BUILD & DEPLOY
-# ==============================================================================
-loading "BUILDING DOCKER IMAGE"
-gcloud builds submit --tag "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" --project="$PROJECT_ID" --quiet > build.log 2>&1 || {
-    echo -e "  ${RED}BUILD FAILED${RESET}"; tail -n 20 build.log; exit 1;
-}
+loading "BUILDING CONTAINER IMAGE"
+gcloud builds submit --tag "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" --project="$PROJECT_ID" --quiet > build.log 2>&1
 
-loading "DEPLOYING TO CLOUD RUN"
+if [ $? -ne 0 ]; then 
+    echo -e "  ${RED}BUILD FAILED. CHECK LOGS BELOW:${RESET}"
+    tail -n 15 build.log
+    rm -f build.log
+    exit 1
+fi
+
+loading "DEPLOYING TO CLOUD RUN IN ${REGION}"
 gcloud run deploy "$SERVICE_NAME" \
   --image "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" \
   --platform managed --region "$REGION" \
   --cpu "$CPU" --memory "$RAM" --port 8080 \
-  --concurrency 1000 --timeout 3600 \
+  --concurrency 800 --timeout 3600 \
   --min-instances 0 --max-instances "$MAX_INSTANCES" \
-  --allow-unauthenticated --project="$PROJECT_ID" --quiet > deploy.log 2>&1 || {
-    echo -e "  ${RED}DEPLOY FAILED${RESET}"; tail -n 20 deploy.log; exit 1;
-}
+  --allow-unauthenticated --project="$PROJECT_ID" --quiet > deploy.log 2>&1
 
-# ==============================================================================
-# GENERATE CONNECTION DETAILS
-# ==============================================================================
-SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --format='value(status.url)' 2>/dev/null || echo "")
-CLEAN_HOST=$(echo "$SERVICE_URL" | sed 's|https://||; s|/$||')
+if [ $? -ne 0 ]; then 
+    echo -e "  ${RED}DEPLOYMENT FAILED. CHECK LOGS BELOW:${RESET}"
+    tail -n 15 deploy.log
+    rm -f build.log deploy.log
+    exit 1
+fi
+
+SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --project="$PROJECT_ID" --format='value(status.url)' 2>/dev/null)
+CLEAN_HOST=$(echo "$SERVICE_URL" | sed 's|https://||')
+
+# ✅ FIXED CONNECTION LINKS (matching correct VMess UUID)
 VMESS_UUID="b831381d-6324-4d53-ad4f-8cda48b30811"
-
-# Generate links
-VLESS_WS="vless://b831381d-6324-4d53-ad4f-8cda48b30811@${CLEAN_HOST}:443?encryption=none&security=tls&sni=${CLEAN_HOST}&type=ws&path=/vless-rafaeltv&host=${CLEAN_HOST}#VLESS-WS"
-VLESS_HU="vless://b831381d-6324-4d53-ad4f-8cda48b30811@${CLEAN_HOST}:443?encryption=none&security=tls&sni=${CLEAN_HOST}&type=httpupgrade&path=/vless-rafaeltv-hu&host=${CLEAN_HOST}#VLESS-HTTPUPGRADE"
-VLESS_XH="vless://b831381d-6324-4d53-ad4f-8cda48b30811@${CLEAN_HOST}:443?encryption=none&security=tls&sni=${CLEAN_HOST}&type=xhttp&path=/vless-rafaeltv-xh&host=${CLEAN_HOST}&mode=stream-up#VLESS-XHTTP"
-
-VMESS_WS_JSON='{"v":"2","ps":"VMESS-WS","add":"'"${CLEAN_HOST}"'","port":"443","id":"'"${VMESS_UUID}"'","aid":"0","scy":"auto","net":"ws","type":"none","host":"'"${CLEAN_HOST}"'","path":"/vmess-rafaeltv","tls":"tls","sni":"'"${CLEAN_HOST}"'"}'
+SS_B64=$(echo -n "aes-256-gcm:rafaeltv" | base64 -w0)
+VLESS_WS="vless://rafaeltv@${CLEAN_HOST}:443?encryption=none&type=ws&path=/vless-rafaeltv&host=${CLEAN_HOST}&security=tls&sni=${CLEAN_HOST}#VLESS-WS"
+VMESS_WS_JSON='{"v":"2","ps":"VMESS-WS","add":"'"${CLEAN_HOST}"'","port":"443","id":"'"${VMESS_UUID}"'","aid":"0","scy":"auto","net":"ws","type":"none","host":"'"${CLEAN_HOST}"'","path":"/vmess-rafaeltv","tls":"tls","sni":"'"${CLEAN_HOST}"'","fp":"chrome","alpn":"http/1.1"}'
 VMESS_WS_B64=$(echo -n "$VMESS_WS_JSON" | base64 -w0)
+TROJAN_WS="trojan://rafaeltv@${CLEAN_HOST}:443?type=ws&path=/rafaeltv&host=${CLEAN_HOST}&security=tls&sni=${CLEAN_HOST}#TROJAN-WS"
 
-TROJAN_WS="trojan://rafaeltv@${CLEAN_HOST}:443?security=tls&sni=${CLEAN_HOST}&type=ws&path=/rafaeltv&host=${CLEAN_HOST}#TROJAN-WS"
-TROJAN_HU="trojan://rafaeltv@${CLEAN_HOST}:443?security=tls&sni=${CLEAN_HOST}&type=httpupgrade&path=/rafaeltv-hu&host=${CLEAN_HOST}#TROJAN-HTTPUPGRADE"
-TROJAN_XH="trojan://rafaeltv@${CLEAN_HOST}:443?security=tls&sni=${CLEAN_HOST}&type=xhttp&path=/rafaeltv-xh&host=${CLEAN_HOST}&mode=stream-up#TROJAN-XHTTP"
-
-# ==============================================================================
-# FINAL OUTPUT
-# ==============================================================================
 echo ""
-echo -e "  ${GREEN}✅ DEPLOYMENT SUCCESSFUL${RESET}"
-echo -e "  ${CYAN}PANEL URL: ${GREEN}${SERVICE_URL}${RESET}"
+echo -e "  ${GREEN}✅ DEPLOYED SUCCESSFULLY${RESET}"
+echo ""
+echo -e "  ${CYAN}DASHBOARD: ${GREEN}${SERVICE_URL}${RESET}"
 echo -e "  ${CYAN}HOST:      ${GREEN}${CLEAN_HOST}${RESET}"
-echo -e "  ${CYAN}PORT:      ${GREEN}443 (TLS)${RESET}"
+echo -e "  ${CYAN}PORT:      ${GREEN}443${RESET}"
+echo -e "  ${CYAN}PASSWORD:  ${GREEN}rafaeltv${RESET}"
 echo -e "  ${CYAN}MODE:      ${GREEN}${MODE} (${CPU} vCPU / ${RAM})${RESET}"
 echo ""
 
 echo -e "  ${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo -e "  ${GREEN}🔗 CONNECTION LINKS${RESET}"
+echo -e "  ${CYAN}                    ALL PROTOCOLS & PATHS${RESET}"
 echo -e "  ${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo -e "  ${CYAN}VLESS WS:          ${GREEN}${VLESS_WS}${RESET}"
-echo -e "  ${CYAN}VLESS HTTPUPGRADE: ${GREEN}${VLESS_HU}${RESET}"
-echo -e "  ${CYAN}VLESS XHTTP:       ${GREEN}${VLESS_XH}${RESET}"
-echo -e "  ${CYAN}VMESS WS:          ${GREEN}vmess://${VMESS_WS_B64}${RESET}"
-echo -e "  ${CYAN}TROJAN WS:         ${GREEN}${TROJAN_WS}${RESET}"
-echo -e "  ${CYAN}TROJAN HTTPUPGRADE:${GREEN}${TROJAN_HU}${RESET}"
-echo -e "  ${CYAN}TROJAN XHTTP:      ${GREEN}${TROJAN_XH}${RESET}"
 echo ""
+echo -e "  ${GREEN}✓ VLESS   ${CYAN}WS: /vless-rafaeltv    ${GREEN}HTTPUPGRADE: /vless-rafaeltv-hu    ${GREEN}XHTTP: /vless-rafaeltv-xh${RESET}"
+echo -e "  ${GREEN}✓ VMESS   ${CYAN}WS: /vmess-rafaeltv    ${GREEN}HTTPUPGRADE: /vmess-rafaeltv-hu    ${GREEN}XHTTP: /vmess-rafaeltv-xh${RESET}"
+echo -e "  ${GREEN}✓ TROJAN  ${CYAN}WS: /rafaeltv          ${GREEN}HTTPUPGRADE: /rafaeltv-hu          ${GREEN}XHTTP: /rafaeltv-xh${RESET}"
+echo -e "  ${GREEN}✓ SHADOWSOCKS ${CYAN}WS: /ss-rafaeltv    ${GREEN}HTTPUPGRADE: /ss-rafaeltv-hu       ${GREEN}XHTTP: /ss-rafaeltv-xh${RESET}"
+echo ""
+echo -e "  ${CYAN}✓ SNI: ${GREEN}${CLEAN_HOST}${RESET}   ${CYAN}✓ ALPN: ${GREEN}http/1.1${RESET}   ${CYAN}✓ FINGERPRINT: ${GREEN}chrome${RESET}"
+echo ""
+echo -e "  ${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+echo -e "  ${GREEN}🔗 DIRECT LINKS:${RESET}"
+echo -e "  ${CYAN}VLESS: ${GREEN}${VLESS_WS}${RESET}"
+echo -e "  ${CYAN}TROJAN: ${GREEN}${TROJAN_WS}${RESET}"
+echo -e "  ${CYAN}VMESS: ${GREEN}vmess://${VMESS_WS_B64}${RESET}"
+echo -e "  ${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
 
+# ✅ GITHUB SYNC (Mas Ligtas - walang local file)
+if [ -n "$GH_TOKEN" ]; then
+    GH_USER="rafaeltv"
+    GH_REPO="rafaeltv-gcp-panel"
+    
+    if git clone -q "https://${GH_TOKEN}@github.com/${GH_USER}/${GH_REPO}.git" gh_temp_deploy 2>/dev/null; then
+        cd gh_temp_deploy
+        > temp.txt
+        while IFS= read -r line; do
+            if [[ "$line" == *".run.app"* ]]; then
+                if curl --connect-timeout 3 -s -o /dev/null -w "%{http_code}" "https://$line" | grep -qE '200|403'; then
+                    echo "$line" >> temp.txt
+                fi
+            fi
+        done < host.txt 2>/dev/null
+        
+        echo "$CLEAN_HOST" >> temp.txt
+        sort -u temp.txt > host.txt
+        rm temp.txt
+        
+        git config --local user.name "Rafaeltv Deployer"
+        git config --local user.email "deploy@rafaeltv.local"
+        git add host.txt
+        git commit -m "Update hosts: ${CLEAN_HOST}" 2>/dev/null
+        git push -q origin main 2>/dev/null || git push -q origin master 2>/dev/null
+        cd ..
+        rm -rf gh_temp_deploy
+    fi
+fi
+
+# ✅ CLEANUP
 rm -f build.log deploy.log
-echo -e "\n  ${GREEN}✅ ALL DONE!${RESET}"
+echo -e "\n  ${GREEN}✅ SCRIPT FINISHED CLEANLY${RESET}"

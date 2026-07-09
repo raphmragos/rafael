@@ -54,7 +54,7 @@
         "security": "none",
         "wsSettings": {
           "path": "/rafaeltv",
-          "headers": { "Host": "your-domain.com" }
+          "headers": { "Host": "127.0.0.1" }
         }
       },
       "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
@@ -70,7 +70,7 @@
         "security": "none",
         "httpupgradeSettings": {
           "path": "/rafaeltv-hu",
-          "host": "your-domain.com",
+          "host": "127.0.0.1",
           "headers": { "User-Agent": "Mozilla/5.0" }
         }
       },
@@ -87,7 +87,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/rafaeltv-xh",
-          "host": "your-domain.com",
+          "host": "127.0.0.1",
           "mode": "stream-up",
           "extra": ""
         }
@@ -107,7 +107,7 @@
         "security": "none",
         "wsSettings": {
           "path": "/vmess-rafaeltv",
-          "headers": { "Host": "your-domain.com" }
+          "headers": { "Host": "127.0.0.1" }
         }
       },
       "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
@@ -125,7 +125,7 @@
         "security": "none",
         "httpupgradeSettings": {
           "path": "/vmess-rafaeltv-hu",
-          "host": "your-domain.com",
+          "host": "127.0.0.1",
           "headers": { "User-Agent": "Mozilla/5.0" }
         }
       },
@@ -144,7 +144,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/vmess-rafaeltv-xh",
-          "host": "your-domain.com",
+          "host": "127.0.0.1",
           "mode": "stream-up",
           "extra": ""
         }
@@ -165,7 +165,7 @@
         "security": "none",
         "wsSettings": {
           "path": "/vless-rafaeltv",
-          "headers": { "Host": "your-domain.com" }
+          "headers": { "Host": "127.0.0.1" }
         }
       },
       "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
@@ -184,7 +184,7 @@
         "security": "none",
         "httpupgradeSettings": {
           "path": "/vless-rafaeltv-hu",
-          "host": "your-domain.com",
+          "host": "127.0.0.1",
           "headers": { "User-Agent": "Mozilla/5.0" }
         }
       },
@@ -204,7 +204,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/vless-rafaeltv-xh",
-          "host": "your-domain.com",
+          "host": "127.0.0.1",
           "mode": "stream-up",
           "extra": ""
         }
@@ -222,7 +222,7 @@
         "security": "none",
         "wsSettings": {
           "path": "/ss-rafaeltv",
-          "headers": { "Host": "your-domain.com" }
+          "headers": { "Host": "127.0.0.1" }
         }
       },
       "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
@@ -238,7 +238,7 @@
         "security": "none",
         "httpupgradeSettings": {
           "path": "/ss-rafaeltv-hu",
-          "host": "your-domain.com",
+          "host": "127.0.0.1",
           "headers": { "User-Agent": "Mozilla/5.0" }
         }
       },
@@ -255,7 +255,7 @@
         "security": "none",
         "xhttpSettings": {
           "path": "/ss-rafaeltv-xh",
-          "host": "your-domain.com",
+          "host": "127.0.0.1",
           "mode": "stream-up",
           "extra": ""
         }

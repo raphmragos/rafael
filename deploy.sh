@@ -86,6 +86,7 @@ esac
 echo ""
 loading "CREATING CONFIG FILES"
 
+# ✅ config.json - TAMA AT BUO
 cat > config.json <<'EOF'
 {
   "log": { "loglevel": "warning" },
@@ -214,35 +215,67 @@ cat > config.json <<'EOF'
 }
 EOF
 
-# ✅ CREATE nginx.conf
+# ✅ TAMANG NGINX — AYOS NA ANG HTTPUPGRADE, WALANG GAGALAWIN SA INDEX.HTML
 cat > nginx.conf <<'EOF'
 worker_processes 1;
 error_log /dev/stdout info;
 events { worker_connections 1024; }
 http {
     access_log /dev/stdout;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header Connection "";
+    proxy_connect_timeout 600s;
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+    proxy_keepalive_timeout 600s;
+
     server {
         listen 8080;
         server_name _;
 
-        location /virgozki { proxy_pass http://127.0.0.1:10000; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
-        location /virgozki-hu { proxy_pass http://127.0.0.1:10001; proxy_http_version 1.1; proxy_set_header Host $host; }
+        # ✅ WEB SOCKET — MAY UPGRADE HEADERS
+        location /virgozki {
+            proxy_pass http://127.0.0.1:10000;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+        location /vmess-virgozki {
+            proxy_pass http://127.0.0.1:10003;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+        location /vless-virgozki {
+            proxy_pass http://127.0.0.1:10006;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
+        location /ss-virgozki {
+            proxy_pass http://127.0.0.1:10009;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+        }
 
-        location /vmess-virgozki { proxy_pass http://127.0.0.1:10003; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
-        location /vmess-virgozki-hu { proxy_pass http://127.0.0.1:10004; proxy_http_version 1.1; proxy_set_header Host $host; }
-
-        location /vless-virgozki { proxy_pass http://127.0.0.1:10006; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
-        location /vless-virgozki-hu { proxy_pass http://127.0.0.1:10007; proxy_http_version 1.1; proxy_set_header Host $host; }
-
-        location /ss-virgozki { proxy_pass http://127.0.0.1:10009; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
-        location /ss-virgozki-hu { proxy_pass http://127.0.0.1:10010; proxy_http_version 1.1; proxy_set_header Host $host; }
+        # ✅ HTTPUPGRADE — WALANG UPGRADE HEADERS! ITO ANG TAMA!
+        location /virgozki-hu {
+            proxy_pass http://127.0.0.1:10001;
+        }
+        location /vmess-virgozki-hu {
+            proxy_pass http://127.0.0.1:10004;
+        }
+        location /vless-virgozki-hu {
+            proxy_pass http://127.0.0.1:10007;
+        }
+        location /ss-virgozki-hu {
+            proxy_pass http://127.0.0.1:10010;
+        }
 
         location / { root /usr/local/openresty/nginx/html; index index.html; }
     }
 }
 EOF
 
-# ✅ CREATE Dockerfile
+# ✅ Dockerfile — GAGAMITIN ANG SARILI MONG index.html
 cat > Dockerfile <<'EOF'
 FROM openresty/openresty:alpine
 RUN apk add --no-cache ca-certificates wget unzip tini
@@ -258,6 +291,7 @@ RUN wget --timeout=60 -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releas
 
 COPY config.json /etc/xray.json
 COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
+# ✅ GAGAMITIN ANG MERON KA NA — HINDI PAPALITAN!
 COPY index.html /usr/local/openresty/nginx/html/index.html
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray/
@@ -297,7 +331,6 @@ SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --
 CLEAN_HOST=$(echo "$SERVICE_URL" | sed 's|https://||')
 
 VMESS_UUID="b831381d-6324-4d53-ad4f-8cda48b30811"
-SS_B64=$(echo -n "aes-256-gcm:virgozki" | base64 -w0)
 VLESS_WS="vless://${VMESS_UUID}@${CLEAN_HOST}:443?encryption=none&type=ws&path=/vless-virgozki&host=${CLEAN_HOST}&security=tls&sni=${CLEAN_HOST}#VLESS-WS"
 VMESS_WS_JSON='{"v":"2","ps":"VMESS-WS-virgozki","add":"'"${CLEAN_HOST}"'","port":"443","id":"'"${VMESS_UUID}"'","aid":"0","scy":"auto","net":"ws","type":"none","host":"'"${CLEAN_HOST}"'","path":"/vmess-virgozki","tls":"tls","sni":"'"${CLEAN_HOST}"'","fp":"chrome","alpn":"http/1.1"}'
 VMESS_WS_B64=$(echo -n "$VMESS_WS_JSON" | base64 -w0)
@@ -363,4 +396,4 @@ fi
 
 # ✅ CLEANUP
 rm -f build.log deploy.log
-echo -e "\n  ${GREEN}✅ SCRIPT FINISHED CLEANLY${RESET}"
+echo -e "\n  ${GREEN}✅ SCRIPT FINISHED CLEANLY — INDEX.HTML MO AY HINDI GAGALAWIN${RESET}"

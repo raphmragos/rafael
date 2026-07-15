@@ -9,33 +9,22 @@
       "port": 10000,
       "listen": "0.0.0.0",
       "protocol": "trojan",
-      "settings": { "clients": [{ "password": "rafaeltv" }] },
+      "settings": { "clients": [{ "password": "virgozki" }] },
       "streamSettings": {
         "network": "ws",
         "security": "none",
-        "wsSettings": { "path": "/rafaeltv" }
+        "wsSettings": { "path": "/virgozki" }
       }
     },
     {
       "port": 10001,
       "listen": "0.0.0.0",
       "protocol": "trojan",
-      "settings": { "clients": [{ "password": "rafaeltv" }] },
+      "settings": { "clients": [{ "password": "virgozki" }] },
       "streamSettings": {
         "network": "httpupgrade",
         "security": "none",
-        "httpupgradeSettings": { "path": "/rafaeltv-hu" }
-      }
-    },
-    {
-      "port": 10002,
-      "listen": "0.0.0.0",
-      "protocol": "trojan",
-      "settings": { "clients": [{ "password": "rafaeltv" }] },
-      "streamSettings": {
-        "network": "xhttp",
-        "security": "none",
-        "xhttpSettings": { "path": "/rafaeltv-xh", "mode": "auto" }
+        "httpupgradeSettings": { "path": "/virgozki-hu" }
       }
     },
     {
@@ -48,7 +37,7 @@
       "streamSettings": {
         "network": "ws",
         "security": "none",
-        "wsSettings": { "path": "/vmess-rafaeltv" }
+        "wsSettings": { "path": "/vmess-virgozki" }
       }
     },
     {
@@ -61,20 +50,7 @@
       "streamSettings": {
         "network": "httpupgrade",
         "security": "none",
-        "httpupgradeSettings": { "path": "/vmess-rafaeltv-hu" }
-      }
-    },
-    {
-      "port": 10005,
-      "listen": "0.0.0.0",
-      "protocol": "vmess",
-      "settings": {
-        "clients": [{ "id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0 }]
-      },
-      "streamSettings": {
-        "network": "xhttp",
-        "security": "none",
-        "xhttpSettings": { "path": "/vmess-rafaeltv-xh", "mode": "auto" }
+        "httpupgradeSettings": { "path": "/vmess-virgozki-hu" }
       }
     },
     {
@@ -88,7 +64,7 @@
       "streamSettings": {
         "network": "ws",
         "security": "none",
-        "wsSettings": { "path": "/vless-rafaeltv" }
+        "wsSettings": { "path": "/vless-virgozki" }
       }
     },
     {
@@ -102,54 +78,29 @@
       "streamSettings": {
         "network": "httpupgrade",
         "security": "none",
-        "httpupgradeSettings": { "path": "/vless-rafaeltv-hu" }
-      }
-    },
-    {
-      "port": 10008,
-      "listen": "0.0.0.0",
-      "protocol": "vless",
-      "settings": {
-        "clients": [{ "id": "b831381d-6324-4d53-ad4f-8cda48b30811" }],
-        "decryption": "none"
-      },
-      "streamSettings": {
-        "network": "xhttp",
-        "security": "none",
-        "xhttpSettings": { "path": "/vless-rafaeltv-xh", "mode": "auto" }
+        "httpupgradeSettings": { "path": "/vless-virgozki-hu" }
       }
     },
     {
       "port": 10009,
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
-      "settings": { "clients": [{ "password": "rafaeltv", "method": "aes-256-gcm" }] },
+      "settings": { "clients": [{ "password": "virgozki", "method": "aes-256-gcm" }] },
       "streamSettings": {
         "network": "ws",
         "security": "none",
-        "wsSettings": { "path": "/ss-rafaeltv" }
+        "wsSettings": { "path": "/ss-virgozki" }
       }
     },
     {
       "port": 10010,
       "listen": "0.0.0.0",
       "protocol": "shadowsocks",
-      "settings": { "clients": [{ "password": "rafaeltv", "method": "aes-256-gcm" }] },
+      "settings": { "clients": [{ "password": "virgozki", "method": "aes-256-gcm" }] },
       "streamSettings": {
         "network": "httpupgrade",
         "security": "none",
-        "httpupgradeSettings": { "path": "/ss-rafaeltv-hu" }
-      }
-    },
-    {
-      "port": 10011,
-      "listen": "0.0.0.0",
-      "protocol": "shadowsocks",
-      "settings": { "clients": [{ "password": "rafaeltv", "method": "aes-256-gcm" }] },
-      "streamSettings": {
-        "network": "xhttp",
-        "security": "none",
-        "xhttpSettings": { "path": "/ss-rafaeltv-xh", "mode": "auto" }
+        "httpupgradeSettings": { "path": "/ss-virgozki-hu" }
       }
     }
   ],

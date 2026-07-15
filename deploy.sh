@@ -1,8 +1,7 @@
 #!/bin/bash
 # ==============================================================================
-# VIRGOZKI PANEL (LIBRENG INTERNET / WALA BAYAD)
+# VIRGOZKI PANEL ✅ FIXED: PORT 8080 LISTEN / STARTUP ERROR
 # ENGINEERED BY VIRGOZKI
-# ✅ FIXED: HTTPUpgrade Timeout + Nginx Config + No index.html overwrite
 # ==============================================================================
 
 BOLD='\033[1m'; RESET='\033[0m'
@@ -25,7 +24,7 @@ clear
 echo ""
 echo -e "  ${BOLD}${WHITE}VIRGOZKI PANEL (QWIKLABS OPTIMIZED)${RESET}"
 echo -e "  ${MAGENTA}MADE BY VIRGOZKI${RESET}"
-echo -e "  ${GREEN}NO XHTTP • CLEAN & ERROR FREE${RESET}"
+echo -e "  ${GREEN}✅ FIXED PORT 8080 / STARTUP ERROR${RESET}"
 echo ""
 
 PROJECT_ID=$(gcloud config get-value project 2>/dev/null | tr -d '[:space:]')
@@ -39,7 +38,7 @@ echo -ne "  ${CYAN}DETECTING QWIKLABS REGION... ${RESET}"
 REGION=$(gcloud config get-value compute/region 2>/dev/null | tr -d '[:space:]')
 [ -z "$REGION" ] && REGION=$(gcloud config get-value run/region 2>/dev/null | tr -d '[:space:]')
 [ -z "$REGION" ] && REGION=$(gcloud run regions list --format="value(REGION)" --limit=1 2>/dev/null | tr -d '[:space:]')
-[ -z "$REGION" ] && REGION="us-central1"
+[ -z "$REGION" ] && REGION="asia-east1"
 echo -e "${GREEN}${REGION}${RESET}"
 echo ""
 
@@ -62,10 +61,9 @@ SERVICE_NAME=${INPUT_NAME:-virgozki-panel}
 
 echo ""
 echo -e "  ${CYAN}SELECT MODE:${RESET}"
-echo -e "  ${YELLOW}1) AUTO         (1 vCPU / 2Gi  RAM) ✅ Recommended for Qwiklab${RESET}"
+echo -e "  ${YELLOW}1) AUTO         (1 vCPU / 2Gi  RAM) ✅ Recommended${RESET}"
 echo -e "  ${YELLOW}2) HIGH         (2 vCPU / 4Gi  RAM)${RESET}"
 echo -e "  ${YELLOW}3) STABLE       (4 vCPU / 8Gi  RAM)${RESET}"
-echo -e "  ${YELLOW}4) CUSTOM       (Your own specs)${RESET}"
 echo ""
 read -r -p "$(echo -e "  ${CYAN}CHOICE: ${RESET}")" MODE_CHOICE
 
@@ -73,21 +71,13 @@ case "$MODE_CHOICE" in
     1) CPU="1"; RAM="2Gi"; MODE="AUTO"     ; MAX_INSTANCES="2";;
     2) CPU="2"; RAM="4Gi"; MODE="HIGH"     ; MAX_INSTANCES="2";;
     3) CPU="4"; RAM="8Gi"; MODE="STABLE"   ; MAX_INSTANCES="1";;
-    4)
-        echo ""
-        read -r -p "$(echo -e "  ${CYAN}CPU (1/2/4): ${RESET}")" CPU
-        read -r -p "$(echo -e "  ${CYAN}RAM (2Gi/4Gi/8Gi): ${RESET}")" RAM
-        echo ""
-        read -r -p "$(echo -e "  ${CYAN}MAX INSTANCES (1-3): ${RESET}")" MAX_INSTANCES
-        MODE="CUSTOM"
-        ;;
     *) CPU="1"; RAM="2Gi"; MODE="DEFAULT"; MAX_INSTANCES="2";;
 esac
 
 echo ""
 loading "CREATING CONFIG FILES"
 
-# ✅ config.json - BUO AT TAMA
+# ✅ config.json - TAMA AT BUO
 cat > config.json <<'EOF'
 {
   "log": { "loglevel": "warning" },
@@ -216,27 +206,27 @@ cat > config.json <<'EOF'
 }
 EOF
 
-# ✅ TAMANG NGINX — MAY TIMEOUT FIX, WALA NANG ERROR SA HTTPUPGRADE
+# ✅ Nginx — SIGURADONG MAKIKINIG SA 8080, MAY TIMEOUT FIX
 cat > nginx.conf <<'EOF'
 worker_processes 1;
-error_log /dev/stdout info;
+error_log /dev/stderr info;
 events { worker_connections 1024; }
 http {
     access_log /dev/stdout;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header Connection "";
-    # ✅ PINAHABA ANG TIMEOUT — HINDI NA AGAD MAPUTOL!
     proxy_connect_timeout 600s;
     proxy_read_timeout 600s;
     proxy_send_timeout 600s;
     proxy_keepalive_timeout 600s;
 
     server {
-        listen 8080;
+        listen 8080 default_server;
+        listen [::]:8080 default_server;
         server_name _;
 
-        # ✅ WEB SOCKET — MAY UPGRADE HEADERS
+        # ✅ WebSocket Paths
         location /virgozki {
             proxy_pass http://127.0.0.1:10000;
             proxy_set_header Upgrade $http_upgrade;
@@ -258,7 +248,7 @@ http {
             proxy_set_header Connection "upgrade";
         }
 
-        # ✅ HTTPUPGRADE — WALANG UPGRADE HEADERS! ITO ANG TAMA!
+        # ✅ HTTPUpgrade Paths — WALANG UPGRADE HEADERS!
         location /virgozki-hu {
             proxy_pass http://127.0.0.1:10001;
         }
@@ -272,17 +262,22 @@ http {
             proxy_pass http://127.0.0.1:10010;
         }
 
-        location / { root /usr/local/openresty/nginx/html; index index.html; }
+        location / {
+            root /usr/local/openresty/nginx/html;
+            index index.html;
+            try_files $uri $uri/ /index.html;
+        }
     }
 }
 EOF
 
-# ✅ Dockerfile — GAGAMITIN ANG SARILI MONG index.html
+# ✅ DOCKERFILE — AYOS NA ANG PAGSIMULA! UNA NGINX PAGKATAPOS XRAY
 cat > Dockerfile <<'EOF'
 FROM openresty/openresty:alpine
-RUN apk add --no-cache ca-certificates wget unzip tini
+RUN apk add --no-cache ca-certificates wget unzip tini curl
 
-RUN wget --timeout=60 -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+# ✅ DOWNLOAD XRAY — SIGURADO MERON
+RUN wget --timeout=120 --no-check-certificate -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
     unzip -q /tmp/xray.zip -d /tmp/xray/ && \
     mv /tmp/xray/xray /usr/local/bin/ && \
     mkdir -p /usr/local/share/xray/ && \
@@ -291,16 +286,18 @@ RUN wget --timeout=60 -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releas
     chmod +x /usr/local/bin/xray && \
     rm -rf /tmp/xray /tmp/xray.zip
 
+# ✅ KOPYAHIN ANG FILES — INDEX.HTML MO AY HINDI PAPALITAN!
 COPY config.json /etc/xray.json
 COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
-# ✅ GAGAMITIN ANG MERON KA NA — HINDI PAPALITAN!
 COPY index.html /usr/local/openresty/nginx/html/index.html
 
 ENV XRAY_LOCATION_ASSET=/usr/local/share/xray/
+ENV PORT=8080
 EXPOSE 8080
 
+# ✅ AYOS NA ANG PAGSIMULA — UNA NGINX PARA MAKILISTEN AGAD SA 8080!
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD sh -c "xray run -c /etc/xray.json & exec openresty -g 'daemon off;'"
+CMD sh -c "openresty -g 'daemon off;' & sleep 2 && xray run -c /etc/xray.json"
 EOF
 
 loading "BUILDING CONTAINER IMAGE"
@@ -308,7 +305,7 @@ gcloud builds submit --tag "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" --project="$PR
 
 if [ $? -ne 0 ]; then 
     echo -e "  ${RED}BUILD FAILED. CHECK LOGS BELOW:${RESET}"
-    tail -n 15 build.log
+    tail -n 20 build.log
     rm -f build.log
     exit 1
 fi
@@ -318,13 +315,14 @@ gcloud run deploy "$SERVICE_NAME" \
   --image "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" \
   --platform managed --region "$REGION" \
   --cpu "$CPU" --memory "$RAM" --port 8080 \
-  --concurrency 800 --timeout 3600 \
+  --concurrency 1000 --timeout 3600 \
   --min-instances 0 --max-instances "$MAX_INSTANCES" \
+  --health-check-timeout=30 \
   --allow-unauthenticated --project="$PROJECT_ID" --quiet > deploy.log 2>&1
 
 if [ $? -ne 0 ]; then 
     echo -e "  ${RED}DEPLOYMENT FAILED. CHECK LOGS BELOW:${RESET}"
-    tail -n 15 deploy.log
+    tail -n 20 deploy.log
     rm -f build.log deploy.log
     exit 1
 fi
@@ -339,11 +337,11 @@ VMESS_WS_B64=$(echo -n "$VMESS_WS_JSON" | base64 -w0)
 TROJAN_WS="trojan://virgozki@${CLEAN_HOST}:443?type=ws&path=/virgozki&host=${CLEAN_HOST}&security=tls&sni=${CLEAN_HOST}#TROJAN-WS"
 
 echo ""
-echo -e "  ${GREEN}✅ DEPLOYED SUCCESSFULLY${RESET}"
+echo -e "  ${GREEN}✅ DEPLOYED SUCCESSFULLY — AYOS NA ANG PORT!${RESET}"
 echo ""
 echo -e "  ${CYAN}DASHBOARD: ${GREEN}${SERVICE_URL}${RESET}"
 echo -e "  ${CYAN}HOST:      ${GREEN}${CLEAN_HOST}${RESET}"
-echo -e "  ${CYAN}PORT:      ${GREEN}443${RESET}"
+echo -e "  ${CYAN}PORT:      ${GREEN}443 (Cloud Run) → 8080 (Container)${RESET}"
 echo -e "  ${CYAN}PASSWORD:  ${GREEN}virgozki${RESET}"
 echo -e "  ${CYAN}MODE:      ${GREEN}${MODE} (${CPU} vCPU / ${RAM})${RESET}"
 echo ""
@@ -398,4 +396,4 @@ fi
 
 # ✅ CLEANUP
 rm -f build.log deploy.log
-echo -e "\n  ${GREEN}✅ SCRIPT FINISHED CLEANLY — AYOS NA ANG HTTPUPGRADE!${RESET}"
+echo -e "\n  ${GREEN}✅ LAHAT AY AYOS NA! PORT 8080 AY MAKIKINIG AGAD!${RESET}"

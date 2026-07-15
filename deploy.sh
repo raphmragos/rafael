@@ -38,7 +38,7 @@ echo -ne "  ${CYAN}DETECTING QWIKLABS REGION... ${RESET}"
 REGION=$(gcloud config get-value compute/region 2>/dev/null | tr -d '[:space:]')
 [ -z "$REGION" ] && REGION=$(gcloud config get-value run/region 2>/dev/null | tr -d '[:space:]')
 [ -z "$REGION" ] && REGION=$(gcloud run regions list --format="value(REGION)" --limit=1 2>/dev/null | tr -d '[:space:]')
-[ -z "$REGION" ] && REGION="asia-east1"
+[ -z "$REGION" ] && REGION="us-central1"
 echo -e "${GREEN}${REGION}${RESET}"
 echo ""
 

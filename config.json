@@ -52,12 +52,9 @@
       "streamSettings": {
         "network": "ws",
         "security": "none",
-        "wsSettings": {
-          "path": "/rafaeltv",
-          "headers": { "Host": "127.0.0.1" }
-        }
+        "wsSettings": { "path": "/rafaeltv" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10001,
@@ -68,13 +65,9 @@
       "streamSettings": {
         "network": "httpupgrade",
         "security": "none",
-        "httpupgradeSettings": {
-          "path": "/rafaeltv-hu",
-          "host": "127.0.0.1",
-          "headers": { "User-Agent": "Mozilla/5.0" }
-        }
+        "httpupgradeSettings": { "path": "/rafaeltv-hu" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10002,
@@ -85,14 +78,9 @@
       "streamSettings": {
         "network": "xhttp",
         "security": "none",
-        "xhttpSettings": {
-          "path": "/rafaeltv-xh",
-          "host": "127.0.0.1",
-          "mode": "stream-up",
-          "extra": ""
-        }
+        "xhttpSettings": { "path": "/rafaeltv-xh", "mode": "auto" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10003,
@@ -100,17 +88,14 @@
       "protocol": "vmess",
       "tag": "vmess-ws",
       "settings": {
-        "clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "security": "auto", "email": "user@local"}]
+        "clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "security": "auto"}]
       },
       "streamSettings": {
         "network": "ws",
         "security": "none",
-        "wsSettings": {
-          "path": "/vmess-rafaeltv",
-          "headers": { "Host": "127.0.0.1" }
-        }
+        "wsSettings": { "path": "/vmess-rafaeltv" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10004,
@@ -118,18 +103,14 @@
       "protocol": "vmess",
       "tag": "vmess-hu",
       "settings": {
-        "clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "security": "auto", "email": "user@local"}]
+        "clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "security": "auto"}]
       },
       "streamSettings": {
         "network": "httpupgrade",
         "security": "none",
-        "httpupgradeSettings": {
-          "path": "/vmess-rafaeltv-hu",
-          "host": "127.0.0.1",
-          "headers": { "User-Agent": "Mozilla/5.0" }
-        }
+        "httpupgradeSettings": { "path": "/vmess-rafaeltv-hu" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10005,
@@ -137,19 +118,14 @@
       "protocol": "vmess",
       "tag": "vmess-xh",
       "settings": {
-        "clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "security": "auto", "email": "user@local"}]
+        "clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "alterId": 0, "security": "auto"}]
       },
       "streamSettings": {
         "network": "xhttp",
         "security": "none",
-        "xhttpSettings": {
-          "path": "/vmess-rafaeltv-xh",
-          "host": "127.0.0.1",
-          "mode": "stream-up",
-          "extra": ""
-        }
+        "xhttpSettings": { "path": "/vmess-rafaeltv-xh", "mode": "auto" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10006,
@@ -157,18 +133,15 @@
       "protocol": "vless",
       "tag": "vless-ws",
       "settings": {
-        "clients": [{"id": "rafaeltv", "email": "user@local"}],
+        "clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811"}],
         "decryption": "none"
       },
       "streamSettings": {
         "network": "ws",
         "security": "none",
-        "wsSettings": {
-          "path": "/vless-rafaeltv",
-          "headers": { "Host": "127.0.0.1" }
-        }
+        "wsSettings": { "path": "/vless-rafaeltv" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10007,
@@ -176,19 +149,15 @@
       "protocol": "vless",
       "tag": "vless-hu",
       "settings": {
-        "clients": [{"id": "rafaeltv", "email": "user@local"}],
+        "clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811"}],
         "decryption": "none"
       },
       "streamSettings": {
         "network": "httpupgrade",
         "security": "none",
-        "httpupgradeSettings": {
-          "path": "/vless-rafaeltv-hu",
-          "host": "127.0.0.1",
-          "headers": { "User-Agent": "Mozilla/5.0" }
-        }
+        "httpupgradeSettings": { "path": "/vless-rafaeltv-hu" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10008,
@@ -196,20 +165,15 @@
       "protocol": "vless",
       "tag": "vless-xh",
       "settings": {
-        "clients": [{"id": "rafaeltv", "email": "user@local"}],
+        "clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811"}],
         "decryption": "none"
       },
       "streamSettings": {
         "network": "xhttp",
         "security": "none",
-        "xhttpSettings": {
-          "path": "/vless-rafaeltv-xh",
-          "host": "127.0.0.1",
-          "mode": "stream-up",
-          "extra": ""
-        }
+        "xhttpSettings": { "path": "/vless-rafaeltv-xh", "mode": "auto" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10009,
@@ -220,12 +184,9 @@
       "streamSettings": {
         "network": "ws",
         "security": "none",
-        "wsSettings": {
-          "path": "/ss-rafaeltv",
-          "headers": { "Host": "127.0.0.1" }
-        }
+        "wsSettings": { "path": "/ss-rafaeltv" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10010,
@@ -236,13 +197,9 @@
       "streamSettings": {
         "network": "httpupgrade",
         "security": "none",
-        "httpupgradeSettings": {
-          "path": "/ss-rafaeltv-hu",
-          "host": "127.0.0.1",
-          "headers": { "User-Agent": "Mozilla/5.0" }
-        }
+        "httpupgradeSettings": { "path": "/ss-rafaeltv-hu" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     },
     {
       "port": 10011,
@@ -253,14 +210,9 @@
       "streamSettings": {
         "network": "xhttp",
         "security": "none",
-        "xhttpSettings": {
-          "path": "/ss-rafaeltv-xh",
-          "host": "127.0.0.1",
-          "mode": "stream-up",
-          "extra": ""
-        }
+        "xhttpSettings": { "path": "/ss-rafaeltv-xh", "mode": "auto" }
       },
-      "sniffing": { "enabled": true, "destOverride": ["http", "tls"], "metadataOnly": false }
+      "sniffing": { "enabled": true, "destOverride": ["http", "tls"] }
     }
   ],
   "outbounds": [

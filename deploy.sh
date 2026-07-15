@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# VIRGOZKI PANEL ✅ FIXED: PORT 8080 LISTEN / STARTUP ERROR
+# VIRGOZKI PANEL ✅ FIXED: NO UNRECOGNIZED ARGUMENT / PORT 8080
 # ENGINEERED BY VIRGOZKI
 # ==============================================================================
 
@@ -24,7 +24,7 @@ clear
 echo ""
 echo -e "  ${BOLD}${WHITE}VIRGOZKI PANEL (QWIKLABS OPTIMIZED)${RESET}"
 echo -e "  ${MAGENTA}MADE BY VIRGOZKI${RESET}"
-echo -e "  ${GREEN}✅ FIXED PORT 8080 / STARTUP ERROR${RESET}"
+echo -e "  ${GREEN}✅ NO ERROR / NO UNRECOGNIZED ARGUMENT${RESET}"
 echo ""
 
 PROJECT_ID=$(gcloud config get-value project 2>/dev/null | tr -d '[:space:]')
@@ -271,10 +271,10 @@ http {
 }
 EOF
 
-# ✅ DOCKERFILE — AYOS NA ANG PAGSIMULA! UNA NGINX PAGKATAPOS XRAY
+# ✅ DOCKERFILE — AYOS NA ANG PAGSIMULA! WALANG KULANG
 cat > Dockerfile <<'EOF'
 FROM openresty/openresty:alpine
-RUN apk add --no-cache ca-certificates wget unzip tini curl
+RUN apk add --no-cache ca-certificates wget unzip tini
 
 # ✅ DOWNLOAD XRAY — SIGURADO MERON
 RUN wget --timeout=120 --no-check-certificate -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
@@ -295,7 +295,7 @@ ENV XRAY_LOCATION_ASSET=/usr/local/share/xray/
 ENV PORT=8080
 EXPOSE 8080
 
-# ✅ AYOS NA ANG PAGSIMULA — UNA NGINX PARA MAKILISTEN AGAD SA 8080!
+# ✅ AYOS NA ANG PAGSIMULA — UNA NGINX PARA MAKILISTEN AGAD!
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD sh -c "openresty -g 'daemon off;' & sleep 2 && xray run -c /etc/xray.json"
 EOF
@@ -310,14 +310,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-loading "DEPLOYING TO CLOUD RUN IN ${REGION}"
+loading "DEPLOYING TO CLOUD RUN — WALANG EXTRA ARGUMENT!"
 gcloud run deploy "$SERVICE_NAME" \
   --image "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" \
   --platform managed --region "$REGION" \
   --cpu "$CPU" --memory "$RAM" --port 8080 \
   --concurrency 1000 --timeout 3600 \
   --min-instances 0 --max-instances "$MAX_INSTANCES" \
-  --health-check-timeout=30 \
   --allow-unauthenticated --project="$PROJECT_ID" --quiet > deploy.log 2>&1
 
 if [ $? -ne 0 ]; then 
@@ -337,11 +336,11 @@ VMESS_WS_B64=$(echo -n "$VMESS_WS_JSON" | base64 -w0)
 TROJAN_WS="trojan://virgozki@${CLEAN_HOST}:443?type=ws&path=/virgozki&host=${CLEAN_HOST}&security=tls&sni=${CLEAN_HOST}#TROJAN-WS"
 
 echo ""
-echo -e "  ${GREEN}✅ DEPLOYED SUCCESSFULLY — AYOS NA ANG PORT!${RESET}"
+echo -e "  ${GREEN}✅ DEPLOYED SUCCESSFULLY — WALANG ERROR!${RESET}"
 echo ""
 echo -e "  ${CYAN}DASHBOARD: ${GREEN}${SERVICE_URL}${RESET}"
 echo -e "  ${CYAN}HOST:      ${GREEN}${CLEAN_HOST}${RESET}"
-echo -e "  ${CYAN}PORT:      ${GREEN}443 (Cloud Run) → 8080 (Container)${RESET}"
+echo -e "  ${CYAN}PORT:      ${GREEN}443 → 8080${RESET}"
 echo -e "  ${CYAN}PASSWORD:  ${GREEN}virgozki${RESET}"
 echo -e "  ${CYAN}MODE:      ${GREEN}${MODE} (${CPU} vCPU / ${RAM})${RESET}"
 echo ""
@@ -366,8 +365,8 @@ echo -e "  ${YELLOW}━━━━━━━━━━━━━━━━━━━━
 
 # ✅ GITHUB SYNC
 if [ -n "$GH_TOKEN" ]; then
-    GH_USER="rafaeltv"
-    GH_REPO="rafaeltv-gcp-panel"
+    GH_USER="raphmragos"
+    GH_REPO="rafael"
     
     if git clone -q "https://${GH_TOKEN}@github.com/${GH_USER}/${GH_REPO}.git" gh_temp_deploy 2>/dev/null; then
         cd gh_temp_deploy
@@ -396,4 +395,4 @@ fi
 
 # ✅ CLEANUP
 rm -f build.log deploy.log
-echo -e "\n  ${GREEN}✅ LAHAT AY AYOS NA! PORT 8080 AY MAKIKINIG AGAD!${RESET}"
+echo -e "\n  ${GREEN}✅ LAHAT AY AYOS NA! WALANG UNRECOGNIZED ARGUMENT!${RESET}"

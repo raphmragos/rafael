@@ -2,6 +2,7 @@
 # ==============================================================================
 # VIRGOZKI PANEL (LIBRENG INTERNET / WALA BAYAD)
 # ENGINEERED BY VIRGOZKI
+# ✅ FIXED: HTTPUpgrade Timeout + Nginx Config + No index.html overwrite
 # ==============================================================================
 
 BOLD='\033[1m'; RESET='\033[0m'
@@ -86,7 +87,7 @@ esac
 echo ""
 loading "CREATING CONFIG FILES"
 
-# ✅ config.json - TAMA AT BUO
+# ✅ config.json - BUO AT TAMA
 cat > config.json <<'EOF'
 {
   "log": { "loglevel": "warning" },
@@ -215,7 +216,7 @@ cat > config.json <<'EOF'
 }
 EOF
 
-# ✅ TAMANG NGINX — AYOS NA ANG HTTPUPGRADE, WALANG GAGALAWIN SA INDEX.HTML
+# ✅ TAMANG NGINX — MAY TIMEOUT FIX, WALA NANG ERROR SA HTTPUPGRADE
 cat > nginx.conf <<'EOF'
 worker_processes 1;
 error_log /dev/stdout info;
@@ -225,6 +226,7 @@ http {
     proxy_http_version 1.1;
     proxy_set_header Host $host;
     proxy_set_header Connection "";
+    # ✅ PINAHABA ANG TIMEOUT — HINDI NA AGAD MAPUTOL!
     proxy_connect_timeout 600s;
     proxy_read_timeout 600s;
     proxy_send_timeout 600s;
@@ -396,4 +398,4 @@ fi
 
 # ✅ CLEANUP
 rm -f build.log deploy.log
-echo -e "\n  ${GREEN}✅ SCRIPT FINISHED CLEANLY — INDEX.HTML MO AY HINDI GAGALAWIN${RESET}"
+echo -e "\n  ${GREEN}✅ SCRIPT FINISHED CLEANLY — AYOS NA ANG HTTPUPGRADE!${RESET}"

@@ -1,8 +1,7 @@
 FROM openresty/openresty:alpine
-
 RUN apk add --no-cache ca-certificates wget unzip tini
 
-# I-download ang Xray
+# I-download ang tamang Xray
 RUN wget --timeout=60 -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
     unzip -q /tmp/xray.zip -d /tmp/xray/ && \
     mv /tmp/xray/xray /usr/local/bin/ && \
@@ -20,5 +19,5 @@ ENV XRAY_LOCATION_ASSET=/usr/local/share/xray/
 EXPOSE 8080
 
 ENTRYPOINT ["/sbin/tini", "--"]
-# Mas maayos na pagpapatakbo: parehong serbisyo na naka-monitor
-CMD ["sh", "-c", "xray run -c /etc/xray.json & openresty -g 'daemon off;'"]
+# ✅ TAMANG PAGTAKBO: Xray sa likod, OpenResty sa unahan
+CMD sh -c "xray run -c /etc/xray.json & exec openresty -g 'daemon off;'"

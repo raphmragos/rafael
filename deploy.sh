@@ -172,4 +172,195 @@ cat > config.json <<'EOF'
       "protocol": "vless",
       "tag": "vless-ws",
       "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "email": "user@local"}], "decryption": "none"},
-      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/vless-virgozki"
+      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/vless-virgozki"}},
+      "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
+    },
+    {
+      "port": 10007,
+      "listen": "127.0.0.1",
+      "protocol": "vless",
+      "tag": "vless-hu",
+      "settings": {"clients": [{"id": "b831381d-6324-4d53-ad4f-8cda48b30811", "email": "user@local"}], "decryption": "none"},
+      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/vless-virgozki-hu"}},
+      "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
+    },
+    {
+      "port": 10009,
+      "listen": "127.0.0.1",
+      "protocol": "shadowsocks",
+      "tag": "ss-ws",
+      "settings": {"clients": [{"password": "virgozki", "method": "aes-256-gcm"}]},
+      "streamSettings": {"network": "ws", "security": "none", "wsSettings": {"path": "/ss-virgozki"}},
+      "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
+    },
+    {
+      "port": 10010,
+      "listen": "127.0.0.1",
+      "protocol": "shadowsocks",
+      "tag": "ss-hu",
+      "settings": {"clients": [{"password": "virgozki", "method": "aes-256-gcm"}]},
+      "streamSettings": {"network": "httpupgrade", "security": "none", "httpupgradeSettings": {"path": "/ss-virgozki-hu"}},
+      "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
+    }
+  ],
+  "outbounds": [{"protocol": "freedom", "tag": "direct"}, {"protocol": "blackhole", "tag": "block"}],
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {"type": "field", "domain": ["geosite:category-ads-all"], "outboundTag": "block"},
+      {"type": "field", "inboundTag": ["trojan-ws","trojan-hu","vmess-ws","vmess-hu","vless-ws","vless-hu","ss-ws","ss-hu"], "outboundTag": "direct"}
+    ]
+  }
+}
+EOF
+
+# ✅ CREATE nginx.conf
+cat > nginx.conf <<'EOF'
+worker_processes 1;
+error_log /dev/stdout info;
+events { worker_connections 1024; }
+http {
+    access_log /dev/stdout;
+    server {
+        listen 8080;
+        server_name _;
+
+        location /virgozki { proxy_pass http://127.0.0.1:10000; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
+        location /virgozki-hu { proxy_pass http://127.0.0.1:10001; proxy_http_version 1.1; proxy_set_header Host $host; }
+
+        location /vmess-virgozki { proxy_pass http://127.0.0.1:10003; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
+        location /vmess-virgozki-hu { proxy_pass http://127.0.0.1:10004; proxy_http_version 1.1; proxy_set_header Host $host; }
+
+        location /vless-virgozki { proxy_pass http://127.0.0.1:10006; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
+        location /vless-virgozki-hu { proxy_pass http://127.0.0.1:10007; proxy_http_version 1.1; proxy_set_header Host $host; }
+
+        location /ss-virgozki { proxy_pass http://127.0.0.1:10009; proxy_http_version 1.1; proxy_set_header Upgrade $http_upgrade; proxy_set_header Connection "upgrade"; proxy_set_header Host $host; }
+        location /ss-virgozki-hu { proxy_pass http://127.0.0.1:10010; proxy_http_version 1.1; proxy_set_header Host $host; }
+
+        location / { root /usr/local/openresty/nginx/html; index index.html; }
+    }
+}
+EOF
+
+# ✅ CREATE Dockerfile
+cat > Dockerfile <<'EOF'
+FROM openresty/openresty:alpine
+RUN apk add --no-cache ca-certificates wget unzip tini
+
+RUN wget --timeout=60 -qO /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
+    unzip -q /tmp/xray.zip -d /tmp/xray/ && \
+    mv /tmp/xray/xray /usr/local/bin/ && \
+    mkdir -p /usr/local/share/xray/ && \
+    mv /tmp/xray/geoip.dat /usr/local/share/xray/ && \
+    mv /tmp/xray/geosite.dat /usr/local/share/xray/ && \
+    chmod +x /usr/local/bin/xray && \
+    rm -rf /tmp/xray /tmp/xray.zip
+
+COPY config.json /etc/xray.json
+COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
+COPY index.html /usr/local/openresty/nginx/html/index.html
+
+ENV XRAY_LOCATION_ASSET=/usr/local/share/xray/
+EXPOSE 8080
+
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD sh -c "xray run -c /etc/xray.json & exec openresty -g 'daemon off;'"
+EOF
+
+loading "BUILDING CONTAINER IMAGE"
+gcloud builds submit --tag "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" --project="$PROJECT_ID" --quiet > build.log 2>&1
+
+if [ $? -ne 0 ]; then 
+    echo -e "  ${RED}BUILD FAILED. CHECK LOGS BELOW:${RESET}"
+    tail -n 15 build.log
+    rm -f build.log
+    exit 1
+fi
+
+loading "DEPLOYING TO CLOUD RUN IN ${REGION}"
+gcloud run deploy "$SERVICE_NAME" \
+  --image "gcr.io/${PROJECT_ID}/${SERVICE_NAME}" \
+  --platform managed --region "$REGION" \
+  --cpu "$CPU" --memory "$RAM" --port 8080 \
+  --concurrency 800 --timeout 3600 \
+  --min-instances 0 --max-instances "$MAX_INSTANCES" \
+  --allow-unauthenticated --project="$PROJECT_ID" --quiet > deploy.log 2>&1
+
+if [ $? -ne 0 ]; then 
+    echo -e "  ${RED}DEPLOYMENT FAILED. CHECK LOGS BELOW:${RESET}"
+    tail -n 15 deploy.log
+    rm -f build.log deploy.log
+    exit 1
+fi
+
+SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --region "$REGION" --project="$PROJECT_ID" --format='value(status.url)' 2>/dev/null)
+CLEAN_HOST=$(echo "$SERVICE_URL" | sed 's|https://||')
+
+VMESS_UUID="b831381d-6324-4d53-ad4f-8cda48b30811"
+SS_B64=$(echo -n "aes-256-gcm:virgozki" | base64 -w0)
+VLESS_WS="vless://${VMESS_UUID}@${CLEAN_HOST}:443?encryption=none&type=ws&path=/vless-virgozki&host=${CLEAN_HOST}&security=tls&sni=${CLEAN_HOST}#VLESS-WS"
+VMESS_WS_JSON='{"v":"2","ps":"VMESS-WS-virgozki","add":"'"${CLEAN_HOST}"'","port":"443","id":"'"${VMESS_UUID}"'","aid":"0","scy":"auto","net":"ws","type":"none","host":"'"${CLEAN_HOST}"'","path":"/vmess-virgozki","tls":"tls","sni":"'"${CLEAN_HOST}"'","fp":"chrome","alpn":"http/1.1"}'
+VMESS_WS_B64=$(echo -n "$VMESS_WS_JSON" | base64 -w0)
+TROJAN_WS="trojan://virgozki@${CLEAN_HOST}:443?type=ws&path=/virgozki&host=${CLEAN_HOST}&security=tls&sni=${CLEAN_HOST}#TROJAN-WS"
+
+echo ""
+echo -e "  ${GREEN}✅ DEPLOYED SUCCESSFULLY${RESET}"
+echo ""
+echo -e "  ${CYAN}DASHBOARD: ${GREEN}${SERVICE_URL}${RESET}"
+echo -e "  ${CYAN}HOST:      ${GREEN}${CLEAN_HOST}${RESET}"
+echo -e "  ${CYAN}PORT:      ${GREEN}443${RESET}"
+echo -e "  ${CYAN}PASSWORD:  ${GREEN}virgozki${RESET}"
+echo -e "  ${CYAN}MODE:      ${GREEN}${MODE} (${CPU} vCPU / ${RAM})${RESET}"
+echo ""
+
+echo -e "  ${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+echo -e "  ${CYAN}                    ALL PROTOCOLS & PATHS${RESET}"
+echo -e "  ${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+echo ""
+echo -e "  ${GREEN}✓ VLESS   ${CYAN}WS: /vless-virgozki    ${GREEN}HTTPUPGRADE: /vless-virgozki-hu${RESET}"
+echo -e "  ${GREEN}✓ VMESS   ${CYAN}WS: /vmess-virgozki    ${GREEN}HTTPUPGRADE: /vmess-virgozki-hu${RESET}"
+echo -e "  ${GREEN}✓ TROJAN  ${CYAN}WS: /virgozki          ${GREEN}HTTPUPGRADE: /virgozki-hu${RESET}"
+echo -e "  ${GREEN}✓ SHADOWSOCKS ${CYAN}WS: /ss-virgozki    ${GREEN}HTTPUPGRADE: /ss-virgozki-hu${RESET}"
+echo ""
+echo -e "  ${CYAN}✓ SNI: ${GREEN}${CLEAN_HOST}${RESET}   ${CYAN}✓ ALPN: ${GREEN}http/1.1${RESET}   ${CYAN}✓ FINGERPRINT: ${GREEN}chrome${RESET}"
+echo ""
+echo -e "  ${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+echo -e "  ${GREEN}🔗 DIRECT LINKS:${RESET}"
+echo -e "  ${CYAN}VLESS: ${GREEN}${VLESS_WS}${RESET}"
+echo -e "  ${CYAN}TROJAN: ${GREEN}${TROJAN_WS}${RESET}"
+echo -e "  ${CYAN}VMESS: ${GREEN}vmess://${VMESS_WS_B64}${RESET}"
+echo -e "  ${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+
+# ✅ GITHUB SYNC
+if [ -n "$GH_TOKEN" ]; then
+    GH_USER="rafaeltv"
+    GH_REPO="rafaeltv-gcp-panel"
+    
+    if git clone -q "https://${GH_TOKEN}@github.com/${GH_USER}/${GH_REPO}.git" gh_temp_deploy 2>/dev/null; then
+        cd gh_temp_deploy
+        > temp.txt
+        while IFS= read -r line; do
+            if [[ "$line" == *".run.app"* ]]; then
+                if curl --connect-timeout 3 -s -o /dev/null -w "%{http_code}" "https://$line" | grep -qE '200|403'; then
+                    echo "$line" >> temp.txt
+                fi
+            fi
+        done < host.txt 2>/dev/null
+        
+        echo "$CLEAN_HOST" >> temp.txt
+        sort -u temp.txt > host.txt
+        rm temp.txt
+        
+        git config --local user.name "Virgozki Deployer"
+        git config --local user.email "deploy@virgozki.local"
+        git add host.txt
+        git commit -m "Update hosts: ${CLEAN_HOST}" 2>/dev/null
+        git push -q origin main 2>/dev/null || git push -q origin master 2>/dev/null
+        cd ..
+        rm -rf gh_temp_deploy
+    fi
+fi
+
+# ✅ CLEANUP
+rm -f build.log deploy.log
+echo -e "\n  ${GREEN}✅ SCRIPT FINISHED CLEANLY${RESET}"
